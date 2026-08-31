@@ -3,29 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>District 1 Map — local preview</title>
-  <style>body{margin:0;padding:24px;font-family:system-ui,sans-serif;background:#fafafa} h1{font-size:18px}</style>
+  <title>Austin City Council District 1 Map</title>
+  <style>html,body{margin:0;padding:0;background:#fff;font-family:system-ui,sans-serif} body{padding:12px}</style>
 </head>
 <body>
-  <h1>Austin City Council District 1 — embed preview</h1>
-  <p>This page shows exactly what the Squarespace Code Block will render. Content below is <code>embed.html</code>.</p>
-  <div id="embed-target"></div>
-  <script>
-    // Load embed.html the same way Squarespace would: injected raw into the page.
-    fetch("embed.html").then(r => r.text()).then(html => {
-      const target = document.getElementById("embed-target");
-      target.innerHTML = html;
-      // innerHTML doesn't execute <script>; re-create them so they run.
-      // Run them sequentially so external scripts finish before inline ones.
-      const scripts = [...target.querySelectorAll("script")];
-      (function next() {
-        const old = scripts.shift(); if (!old) return;
-        const s = document.createElement("script");
-        if (old.src) { s.src = old.src; s.onload = next; } else { s.textContent = old.textContent; }
-        old.replaceWith(s);
-        if (!old.src) next();
-      })();
-    });
-  </script>
+  <div id="d1-map-root"></div>
+  <script src="d1-map.js"></script>
 </body>
 </html>

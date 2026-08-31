@@ -9,8 +9,9 @@ boundaries. Intended to be embedded on the public Squarespace site.
 |------|------|
 | `d1-outline.geojson` | District 1 boundary (1 feature) |
 | `d1-precincts.geojson` | 28 voting precincts; only property is `p` (precinct number) |
-| `embed.html` | The snippet to paste into Squarespace |
-| `index.html` | Local preview page that renders `embed.html` |
+| `d1-map.js` | The whole widget: markup, styles, Leaflet loader, search, geolocation |
+| `embed.html` | The 2-line snippet to paste into Squarespace |
+| `index.html` | Standalone page (GitHub Pages / local preview / iframe target) |
 
 Boundary sources: Texas Legislative Council, City of Austin.
 
@@ -23,6 +24,29 @@ Boundary sources: Texas Legislative Council, City of Austin.
 
 The geocoder is `maps.austintexas.gov/arcgis/rest/services/Geocode/COA_Locator` — the City's own public service, so it knows Austin addresses better than any general geocoder. If it were ever retired, `suggest()`/`geocode()` in `embed.html` are the only two functions to swap.
 
+## Embed in Squarespace
+
+Add a **Code Block** (Business plan or higher) and paste exactly this — it's the whole of `embed.html`:
+
+```html
+<div id="d1-map-root"></div>
+<script src="https://cdn.jsdelivr.net/gh/hamzsait/district1-map@main/d1-map.js"></script>
+```
+
+That's it. The script builds the whole widget, loads Leaflet, and fetches the boundary files from wherever it was loaded from. Any change pushed to this repo shows up on the site automatically (jsDelivr caches `@main` for up to ~12 h; pin a tag like `@v1` instead if you want to control exactly when the site updates).
+
+**Alternative: iframe.** GitHub Pages serves `index.html` at https://hamzsait.github.io/district1-map/ — an iframe fully isolates the map from Squarespace's CSS and updates within a minute of a push:
+
+```html
+<iframe src="https://hamzsait.github.io/district1-map/" style="width:100%;height:640px;border:0" allow="geolocation" loading="lazy" title="District 1 map"></iframe>
+```
+
+(`allow="geolocation"` is required for the "Use my location" button to work inside an iframe.)
+
+Notes:
+- The Squarespace editor preview may show a blank box; the live page renders fine.
+- Scroll-wheel zoom is off so the map doesn't hijack page scrolling; users use the +/− buttons or pinch.
+
 ## Preview locally
 
 ```sh
@@ -32,17 +56,3 @@ python3 -m http.server 8080
 ```
 
 (`fetch()` needs an HTTP server — opening `index.html` directly from the file system won't load the GeoJSON.)
-
-## Publish
-
-1. Push this folder to a **public** GitHub repo (e.g. `district1-map`).
-2. `embed.html` already points `DATA_BASE` at
-   `https://cdn.jsdelivr.net/gh/hamzsait/district1-map@main` — jsDelivr serves the
-   files with correct headers + CDN caching (`raw.githubusercontent.com` does not).
-   For local testing against the files in this folder, set `DATA_BASE = ""`.
-3. In Squarespace: add a **Code Block** (Business plan or higher), paste the entire contents of `embed.html`, save.
-
-Notes:
-- The Squarespace editor preview may show a blank box; the live page renders fine.
-- jsDelivr caches `@main` for ~12h. To force an update, reference a commit SHA or tag instead (`@v1`).
-- Scroll-wheel zoom is off so the map doesn't hijack page scrolling; users use the +/− buttons or pinch.
