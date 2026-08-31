@@ -8,12 +8,13 @@ boundaries. Intended to be embedded on the public Squarespace site.
 | File | What |
 |------|------|
 | `d1-outline.geojson` | District 1 boundary (1 feature) |
-| `d1-precincts.geojson` | 28 voting precincts; only property is `p` (precinct number) |
-| `d1-map.js` | The whole widget: markup, styles, Leaflet loader, search, geolocation |
+| `d1-precincts.geojson` | 36 Travis County voting precincts clipped to District 1; only property is `p` (precinct number) |
+| `d1-map.js` | Tiny bootstrap the website points at. **Never changes.** Loads `d1-widget.js` from GitHub Pages |
+| `d1-widget.js` | The whole widget: markup, styles, Leaflet loader, search, geolocation |
 | `embed.html` | The 2-line snippet to paste into Squarespace |
 | `index.html` | Standalone page (GitHub Pages / local preview / iframe target) |
 
-Boundary sources: Texas Legislative Council, City of Austin.
+Boundary sources: City of Austin ArcGIS open data — `BOUNDARIES_single_member_districts` (council districts) and `EXTERNAL_travis_voter_precincts` (Travis County precincts). Rebuilt with `scripts/build-data.py`.
 
 ## Features
 
@@ -33,7 +34,7 @@ Add a **Code Block** (Business plan or higher) and paste exactly this — it's t
 <script src="https://cdn.jsdelivr.net/gh/hamzsait/district1-map@main/d1-map.js"></script>
 ```
 
-That's it. The script builds the whole widget, loads Leaflet, and fetches the boundary files from wherever it was loaded from. Any change pushed to this repo shows up on the site automatically (jsDelivr caches `@main` for up to ~12 h; pin a tag like `@v1` instead if you want to control exactly when the site updates).
+That's it. `d1-map.js` is a tiny bootstrap that never changes; it loads the real widget and data from GitHub Pages (`https://hamzsait.github.io/district1-map/`), which browsers re-check every 10 minutes. **Any push to `main` is live for all visitors within ~10 minutes** — no cache purging, no hard refresh.
 
 **Alternative: iframe.** GitHub Pages serves `index.html` at https://hamzsait.github.io/district1-map/ — an iframe fully isolates the map from Squarespace's CSS and updates within a minute of a push:
 
