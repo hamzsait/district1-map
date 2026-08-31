@@ -3,7 +3,7 @@
  *
  * Embed with:
  *   <div id="d1-map-root"></div>
- *   <script src="https://cdn.jsdelivr.net/gh/hamzsait/district1-map@main/d1-map.js"></script>
+ *   <script src="https://hamzsait.github.io/district1-map/d1-map.js"></script>
  *
  * This file intentionally never changes (CDNs and browsers cache it for days).
  * It loads the actual widget (d1-widget.js) from GitHub Pages, which is served

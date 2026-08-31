@@ -31,10 +31,12 @@ Add a **Code Block** (Business plan or higher) and paste exactly this — it's t
 
 ```html
 <div id="d1-map-root"></div>
-<script src="https://cdn.jsdelivr.net/gh/hamzsait/district1-map@main/d1-map.js"></script>
+<script src="https://hamzsait.github.io/district1-map/d1-map.js"></script>
 ```
 
-That's it. `d1-map.js` is a tiny bootstrap that never changes; it loads the real widget and data from GitHub Pages (`https://hamzsait.github.io/district1-map/`), which browsers re-check every 10 minutes. **Any push to `main` is live for all visitors within ~10 minutes** — no cache purging, no hard refresh.
+That's it. Files are served by GitHub Pages, which browsers re-check every 10 minutes, so **any push to `main` is live for all visitors within ~10 minutes** — no cache purging, no hard refresh.
+
+Don't use a jsDelivr URL (`cdn.jsdelivr.net/gh/...@main/...`) for the script: jsDelivr tells browsers to cache it for 7 days and its own `@main` cache can lag pushes by up to 12 hours, so visitors see stale versions. (`d1-map.js` is a bootstrap that still works if loaded from jsDelivr — it forwards to GitHub Pages — but the bootstrap itself would be stuck in caches.)
 
 **Alternative: iframe.** GitHub Pages serves `index.html` at https://hamzsait.github.io/district1-map/ — an iframe fully isolates the map from Squarespace's CSS and updates within a minute of a push:
 
