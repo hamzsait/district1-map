@@ -17,11 +17,11 @@ Boundary sources: Texas Legislative Council, City of Austin.
 ## Features
 
 - District 1 outline + precinct boundaries with hover tooltips
-- **Address search** — geocoded by OpenStreetMap's Nominatim (free, no API key), biased to the Austin area
+- **Address search with autocomplete** — suggestions as you type from the City of Austin's public address locator (ArcGIS, no API key); handles house-number ranges, not just mapped buildings
 - **Use my location** — browser geolocation (requires HTTPS, which Squarespace provides; the user must click "Allow")
 - Either one drops a pin and reports **In District 1 · Precinct N** or **Not in District 1**, computed in-browser against the GeoJSON — no server involved
 
-Nominatim's usage policy allows light use like this (max 1 request/sec, must show OSM attribution, which the map does). If traffic ever gets heavy, swap the geocoder URL for a keyed service (e.g. Geoapify, MapTiler) — it's one line.
+The geocoder is `maps.austintexas.gov/arcgis/rest/services/Geocode/COA_Locator` — the City's own public service, so it knows Austin addresses better than any general geocoder. If it were ever retired, `suggest()`/`geocode()` in `embed.html` are the only two functions to swap.
 
 ## Preview locally
 
