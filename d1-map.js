@@ -24,10 +24,10 @@
 
   // ---- styles + markup -----------------------------------------
   var style = document.createElement("style");
-  style.textContent = '#d1-map .leaflet-container { font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }\n  #d1-map .precinct-tip { background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:4px 8px; box-shadow:0 1px 4px rgba(0,0,0,.15); }\n  #d1-map .precinct-tip::before { display:none; }\n  #d1-map .d1-legend { background:#fff; padding:8px 10px; border-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,.2); line-height:1.6; }\n  #d1-wrap .d1-sugg { position:absolute; left:0; right:0; top:100%; z-index:2000; background:#fff; border:1px solid #cbd5e1; border-top:0; border-radius:0 0 6px 6px; box-shadow:0 4px 12px rgba(0,0,0,.12); margin:0; padding:0; list-style:none; max-height:260px; overflow-y:auto; }\n  #d1-wrap .d1-sugg li { padding:8px 12px; cursor:pointer; font-size:14px; line-height:1.3; }\n  #d1-wrap .d1-sugg li small { display:block; color:#666; font-size:12px; }\n  #d1-wrap .d1-sugg li:hover, #d1-wrap .d1-sugg li.active { background:#f1f5f9; }\n  #d1-map .d1-legend .sw { display:inline-block; width:22px; height:12px; vertical-align:middle; margin-right:6px; border-radius:2px; }';
+  style.textContent = '#d1-wrap { font-family: inherit; color: #0e2952; }\n  #d1-map .leaflet-container { font: 13px/1.4 "Prompt", Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }\n  #d1-wrap .d1-input { width:100%; box-sizing:border-box; padding:12px 16px; border:2px solid #0e2952; border-radius:999px; font-size:16px; font-family:inherit; color:#0e2952; background:#fff; outline:none; }\n  #d1-wrap .d1-input:focus { box-shadow:0 0 0 3px rgba(250,114,30,.35); }\n  #d1-wrap .d1-input::placeholder { color:#6b7a90; }\n  #d1-wrap .d1-btn { padding:12px 22px; border-radius:999px; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; letter-spacing:.02em; white-space:nowrap; }\n  #d1-wrap .d1-btn-primary { background:#fa721e; color:#fff; border:2px solid #fff; box-shadow:0 0 0 2px #fa721e; }\n  #d1-wrap .d1-btn-primary:hover { background:#e8630f; }\n  #d1-wrap .d1-btn-secondary { background:#fff; color:#0e2952; border:2px solid #0e2952; }\n  #d1-wrap .d1-btn-secondary:hover { background:#f8f4ec; }\n  #d1-wrap .d1-sugg { position:absolute; left:12px; right:12px; top:calc(100% + 4px); z-index:2000; background:#fff; border:2px solid #0e2952; border-radius:14px; box-shadow:0 6px 18px rgba(14,41,82,.18); margin:0; padding:6px 0; list-style:none; max-height:280px; overflow-y:auto; }\n  #d1-wrap .d1-sugg li { padding:9px 16px; cursor:pointer; font-size:15px; line-height:1.3; color:#0e2952; }\n  #d1-wrap .d1-sugg li small { display:block; color:#5b6b82; font-size:12.5px; }\n  #d1-wrap .d1-sugg li:hover, #d1-wrap .d1-sugg li.active { background:#f8f4ec; }\n  #d1-map .precinct-tip { background:#0e2952; color:#fff; border:0; border-radius:8px; padding:5px 10px; font-weight:600; box-shadow:0 2px 8px rgba(14,41,82,.3); }\n  #d1-map .precinct-tip::before { display:none; }\n  #d1-map .d1-legend { background:#fff; color:#0e2952; padding:10px 12px; border-radius:10px; border:2px solid #0e2952; line-height:1.7; font-size:13px; }\n  #d1-map .d1-legend .sw { display:inline-block; width:22px; height:13px; vertical-align:middle; margin-right:7px; border-radius:3px; box-sizing:border-box; }\n  #d1-map .leaflet-popup-content-wrapper { border-radius:12px; border:2px solid #0e2952; box-shadow:0 6px 18px rgba(14,41,82,.2); color:#0e2952; }\n  #d1-map .leaflet-popup-tip { background:#0e2952; }\n  #d1-map .leaflet-bar a { color:#0e2952; }\n  #d1-map .leaflet-tile-pane { filter: saturate(.45) contrast(.92); }\n  #d1-map .leaflet-control-attribution a { color:#0e2952; }';
   document.head.appendChild(style);
 
-  root.innerHTML = '<div id="d1-wrap" style="width:100%">  <form id="d1-search" style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px">\n    <div style="flex:1 1 260px;min-width:0;position:relative">\n      <input id="d1-q" type="text" placeholder="Start typing an Austin address…" autocomplete="off"\n             style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:15px" />\n      <ul id="d1-sugg" class="d1-sugg" hidden></ul>\n    </div>\n    <button type="submit" style="padding:10px 16px;border:0;border-radius:6px;background:#c8102e;color:#fff;font-size:15px;cursor:pointer">Search</button>\n    <button type="button" id="d1-locate" style="padding:10px 14px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;font-size:15px;cursor:pointer">&#9673; Use my location</button>\n  </form>\n  <div id="d1-result" style="min-height:22px;margin:0 0 8px;font-size:15px"></div>\n  <div id="d1-map" style="height:520px;width:100%;border-radius:8px;overflow:hidden;background:#eef2f6"></div></div>';
+  root.innerHTML = '<div id="d1-wrap" style="width:100%">\n  <form id="d1-search" style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 10px">\n    <div style="flex:1 1 260px;min-width:0;position:relative">\n      <input id="d1-q" class="d1-input" type="text" placeholder="Start typing an Austin address…" autocomplete="off" />\n      <ul id="d1-sugg" class="d1-sugg" hidden></ul>\n    </div>\n    <button type="submit" class="d1-btn d1-btn-primary">Search</button>\n    <button type="button" id="d1-locate" class="d1-btn d1-btn-secondary">&#9673; Use my location</button>\n  </form>\n  <div id="d1-result" style="min-height:24px;margin:0 0 10px;font-size:16px"></div>\n  <div id="d1-map" style="height:560px;width:100%;border-radius:16px;overflow:hidden;background:#f8f4ec;border:2px solid #0e2952"></div>\n</div>';
 
   // ---- load Leaflet (once), then boot ---------------------------
   function loadLeaflet(cb) {
@@ -43,8 +43,7 @@
   }
 
 function start(DATA_BASE) {
-  var DISTRICT_COLOR = "#c8102e";   // outline
-  var PRECINCT_COLOR = "#1d4ed8";   // precinct borders
+  var NAVY = "#0e2952", ORANGE = "#fa721e", LIGHT_BLUE = "#8eb8cc";
   // ------------------------------------------------------------
 
   function base(p) { return (DATA_BASE ? DATA_BASE.replace(/\/$/, "") + "/" : "") + p; }
@@ -65,21 +64,24 @@ function start(DATA_BASE) {
   ]).then(function (res) {
     var precincts = res[0], outline = res[1];
 
+    // 1) Solid district shading underneath everything
+    L.geoJSON(outline, { style: { stroke: false, fillColor: NAVY, fillOpacity: 0.28 }, interactive: false }).addTo(map);
+
+    // 2) Precinct boundaries (hover to highlight in orange)
     precinctLayer = L.geoJSON(precincts, {
-      style: { color: PRECINCT_COLOR, weight: 1, opacity: 0.7, fillColor: PRECINCT_COLOR, fillOpacity: 0.08 },
+      style: { color: NAVY, weight: 1.2, opacity: 0.55, fillColor: NAVY, fillOpacity: 0 },
       onEachFeature: function (f, layer) {
         layer.bindTooltip("Precinct " + f.properties.p, { sticky: true, className: "precinct-tip", direction: "top" });
         layer.on({
-          mouseover: function (e) { e.target.setStyle({ fillOpacity: 0.3, weight: 2 }); },
+          mouseover: function (e) { e.target.setStyle({ fillColor: ORANGE, fillOpacity: 0.45, color: ORANGE, weight: 2.5, opacity: 1 }); e.target.bringToFront(); },
           mouseout: function (e) { precinctLayer.resetStyle(e.target); }
         });
       }
     }).addTo(map);
 
-    outlineLayer = L.geoJSON(outline, {
-      style: { color: DISTRICT_COLOR, weight: 3, fill: false },
-      interactive: false
-    }).addTo(map);
+    // 3) Bold district outline on top
+    outlineLayer = L.geoJSON(outline, { style: { color: NAVY, weight: 4, opacity: 1, fill: false }, interactive: false }).addTo(map);
+    outlineLayer.bringToFront();
 
     function fit() { map.invalidateSize(); map.fitBounds(outlineLayer.getBounds(), { padding: [12, 12] }); }
     fit();
@@ -90,8 +92,8 @@ function start(DATA_BASE) {
     legend.onAdd = function () {
       var d = L.DomUtil.create("div", "d1-legend");
       d.innerHTML =
-        '<div><span class="sw" style="border:2px solid ' + DISTRICT_COLOR + '"></span>District 1 boundary</div>' +
-        '<div><span class="sw" style="border:1px solid ' + PRECINCT_COLOR + ';background:rgba(29,78,216,.12)"></span>Voting precinct</div>';
+        '<div><span class="sw" style="border:2px solid ' + NAVY + ';background:rgba(14,41,82,.28)"></span><strong>District 1</strong></div>' +
+        '<div><span class="sw" style="border:1px solid ' + NAVY + ';opacity:.7"></span>Voting precinct</div>';
       return d;
     };
     legend.addTo(map);
@@ -135,7 +137,7 @@ function start(DATA_BASE) {
 
   function setResult(html, isErr) {
     resultEl.innerHTML = html;
-    resultEl.style.color = isErr ? "#b91c1c" : "#111";
+    resultEl.style.color = isErr ? "#c2410c" : "#0e2952";
   }
 
   function enableLookup(precincts, outline) {
@@ -147,11 +149,11 @@ function start(DATA_BASE) {
         if (inFeature(pt, precincts.features[i])) { pct = precincts.features[i].properties.p; break; }
       }
       if (marker) map.removeLayer(marker);
-      marker = L.marker([lat, lng]).addTo(map);
+      marker = L.circleMarker([lat, lng], { radius: 9, color: "#fff", weight: 3, fillColor: ORANGE, fillOpacity: 1 }).addTo(map);
       var msg = inD1
-        ? '<strong style="color:#15803d">&#10003; In District 1</strong>' + (pct != null ? " &middot; Precinct " + pct : "")
-        : '<strong>Not in District 1</strong>';
-      if (label) msg += '<div style="font-size:13px;color:#555">' + label + "</div>";
+        ? '<strong style="color:#fa721e">&#10003; In District 1</strong>' + (pct != null ? ' <span style="color:#0e2952">&middot; Precinct ' + pct + "</span>" : "")
+        : '<strong style="color:#0e2952">Not in District 1</strong>';
+      if (label) msg += '<div style="font-size:13px;color:#5b6b82">' + label + "</div>";
       marker.bindPopup(msg).openPopup();
       setResult(msg);
       map.flyTo([lat, lng], Math.max(map.getZoom(), 13.5));
