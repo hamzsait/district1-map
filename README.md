@@ -3,12 +3,15 @@
 Read-only interactive map of Austin City Council District 1 with voting precinct
 boundaries. Intended to be embedded on the public Squarespace site.
 
-**Contains no voter or canvassing data** — only two boundary files:
+**Contains no private data.** The voter files below are derived from the public
+Travis County registered voter list (a public record published by the county).
 
 | File | What |
 |------|------|
 | `d1-outline.geojson` | District 1 boundary (1 feature) |
 | `d1-precincts.geojson` | 36 Travis County voting precincts clipped to District 1; only property is `p` (precinct number) |
+| `d1-voters.json` | Registered/active voter counts per precinct (shown in hover tooltips) |
+| `d1-voter-index.json` | `[name, precinct, active, registered address]` for District 1 voters only — powers the voter lookup; lazy-loaded (~4.4 MB) only when someone uses it |
 | `d1-map.js` | Tiny bootstrap the website points at. **Never changes.** Loads `d1-widget.js` from GitHub Pages |
 | `d1-widget.js` | The whole widget: markup, styles, Leaflet loader, search, geolocation |
 | `embed.html` | The 2-line snippet to paste into Squarespace |
@@ -17,9 +20,20 @@ boundaries. Intended to be embedded on the public Squarespace site.
 
 Boundary sources: City of Austin ArcGIS open data — `BOUNDARIES_single_member_districts` (council districts) and `EXTERNAL_travis_voter_precincts` (Travis County precincts). Rebuilt with `scripts/build-data.py`.
 
+Voter data source: [Travis County voter registration data files](https://voter-registration-maps-traviscountytx.hub.arcgis.com/pages/data-files-and-reference).
+Rebuild after downloading a fresh CSV with:
+
+```sh
+python3 scripts/build-voters.py /path/to/Registered_Voter_List.csv
+```
+
+Only District 1 voters (`CITYSM == CA1`) are included; VUID, gender, mailing
+address, and all other columns are dropped.
+
 ## Features
 
-- District 1 outline + precinct boundaries with hover tooltips
+- **Voter lookup** (default tab) — type a name, get typeahead matches from the D1 voter roll with Active/Suspense status, registered address, and precinct; clicking a match pins the address on the map
+- District 1 outline + precinct boundaries with hover tooltips showing registered/active voter counts
 - **Address search with autocomplete** — suggestions as you type from the City of Austin's public address locator (ArcGIS, no API key); handles house-number ranges, not just mapped buildings
 - **Use my location** — browser geolocation (requires HTTPS, which Squarespace provides; the user must click "Allow")
 - When the address is in District 1, a **Request a yard sign →** button links to `/request-a-yard-sign?street=…&city=…&state=…&zip=…`

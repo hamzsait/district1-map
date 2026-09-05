@@ -22,10 +22,10 @@
 
   // ---- styles + markup -----------------------------------------
   var style = document.createElement("style");
-  style.textContent = '#d1-wrap { font-family: inherit; color: #0e2952; }\n  #d1-map .leaflet-container { font: 13px/1.4 "Prompt", Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }\n  #d1-wrap .d1-input { width:100%; box-sizing:border-box; padding:12px 16px; border:2px solid #0e2952; border-radius:999px; font-size:16px; font-family:inherit; color:#0e2952; background:#fff; outline:none; }\n  #d1-wrap .d1-input:focus { box-shadow:0 0 0 3px rgba(250,114,30,.35); }\n  #d1-wrap .d1-input::placeholder { color:#6b7a90; }\n  #d1-wrap .d1-btn { padding:12px 22px; border-radius:999px; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; letter-spacing:.02em; white-space:nowrap; }\n  #d1-wrap .d1-btn-primary { background:#fa721e; color:#fff; border:2px solid #fff; box-shadow:0 0 0 2px #fa721e; }\n  #d1-wrap .d1-btn-primary:hover { background:#e8630f; }\n  #d1-wrap .d1-btn-secondary { background:#fff; color:#0e2952; border:2px solid #0e2952; }\n  #d1-wrap .d1-btn-secondary:hover { background:#f8f4ec; }\n  #d1-wrap .d1-sugg { position:absolute; left:12px; right:12px; top:calc(100% + 4px); z-index:2000; background:#fff; border:2px solid #0e2952; border-radius:14px; box-shadow:0 6px 18px rgba(14,41,82,.18); margin:0; padding:6px 0; list-style:none; max-height:280px; overflow-y:auto; }\n  #d1-wrap .d1-sugg li { padding:9px 16px; cursor:pointer; font-size:15px; line-height:1.3; color:#0e2952; }\n  #d1-wrap .d1-sugg li small { display:block; color:#5b6b82; font-size:12.5px; }\n  #d1-wrap .d1-sugg li:hover, #d1-wrap .d1-sugg li.active { background:#f8f4ec; }\n  #d1-map .precinct-tip { background:#0e2952; color:#fff; border:0; border-radius:8px; padding:5px 10px; font-weight:600; box-shadow:0 2px 8px rgba(14,41,82,.3); }\n  #d1-map .precinct-tip::before { display:none; }\n  #d1-map .d1-legend { background:#fff; color:#0e2952; padding:10px 12px; border-radius:10px; border:2px solid #0e2952; line-height:1.7; font-size:13px; }\n  #d1-map .d1-legend .sw { display:inline-block; width:22px; height:13px; vertical-align:middle; margin-right:7px; border-radius:3px; box-sizing:border-box; }\n  #d1-map .leaflet-popup-content-wrapper { border-radius:12px; border:2px solid #0e2952; box-shadow:0 6px 18px rgba(14,41,82,.2); color:#0e2952; }\n  #d1-map .leaflet-popup-tip { background:#0e2952; }\n  #d1-map .leaflet-bar a { color:#0e2952; }\n  #d1-map .leaflet-tile-pane { filter: saturate(.45) contrast(.92); }\n  #d1-map .leaflet-control-attribution a { color:#0e2952; }\n  #d1-wrap .d1-cta, #d1-map .d1-cta { display:inline-block; margin-top:8px; padding:7px 14px; border-radius:999px; background:#fa721e; color:#fff !important; font-weight:600; font-size:13px; text-decoration:none !important; border:2px solid #fff; box-shadow:0 0 0 2px #fa721e; }\n  #d1-wrap .d1-cta:hover, #d1-map .d1-cta:hover { background:#e8630f; }';
+  style.textContent = '#d1-wrap { font-family: inherit; color: #0e2952; }\n  #d1-map .leaflet-container { font: 13px/1.4 "Prompt", Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }\n  #d1-wrap .d1-input { width:100%; box-sizing:border-box; padding:12px 16px; border:2px solid #0e2952; border-radius:999px; font-size:16px; font-family:inherit; color:#0e2952; background:#fff; outline:none; }\n  #d1-wrap .d1-input:focus { box-shadow:0 0 0 3px rgba(250,114,30,.35); }\n  #d1-wrap .d1-input::placeholder { color:#6b7a90; }\n  #d1-wrap .d1-btn { padding:12px 22px; border-radius:999px; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; letter-spacing:.02em; white-space:nowrap; }\n  #d1-wrap .d1-btn-primary { background:#fa721e; color:#fff; border:2px solid #fff; box-shadow:0 0 0 2px #fa721e; }\n  #d1-wrap .d1-btn-primary:hover { background:#e8630f; }\n  #d1-wrap .d1-btn-secondary { background:#fff; color:#0e2952; border:2px solid #0e2952; }\n  #d1-wrap .d1-btn-secondary:hover { background:#f8f4ec; }\n  #d1-wrap .d1-sugg { position:absolute; left:12px; right:12px; top:calc(100% + 4px); z-index:2000; background:#fff; border:2px solid #0e2952; border-radius:14px; box-shadow:0 6px 18px rgba(14,41,82,.18); margin:0; padding:6px 0; list-style:none; max-height:280px; overflow-y:auto; }\n  #d1-wrap .d1-sugg li { padding:9px 16px; cursor:pointer; font-size:15px; line-height:1.3; color:#0e2952; }\n  #d1-wrap .d1-sugg li small { display:block; color:#5b6b82; font-size:12.5px; }\n  #d1-wrap .d1-sugg li:hover, #d1-wrap .d1-sugg li.active { background:#f8f4ec; }\n  #d1-map .precinct-tip { background:#0e2952; color:#fff; border:0; border-radius:8px; padding:5px 10px; font-weight:600; box-shadow:0 2px 8px rgba(14,41,82,.3); }\n  #d1-map .precinct-tip::before { display:none; }\n  #d1-map .d1-legend { background:#fff; color:#0e2952; padding:10px 12px; border-radius:10px; border:2px solid #0e2952; line-height:1.7; font-size:13px; }\n  #d1-map .d1-legend .sw { display:inline-block; width:22px; height:13px; vertical-align:middle; margin-right:7px; border-radius:3px; box-sizing:border-box; }\n  #d1-map .leaflet-popup-content-wrapper { border-radius:12px; border:2px solid #0e2952; box-shadow:0 6px 18px rgba(14,41,82,.2); color:#0e2952; }\n  #d1-map .leaflet-popup-tip { background:#0e2952; }\n  #d1-map .leaflet-bar a { color:#0e2952; }\n  #d1-map .leaflet-tile-pane { filter: saturate(.45) contrast(.92); }\n  #d1-map .leaflet-control-attribution a { color:#0e2952; }\n  #d1-wrap .d1-cta, #d1-map .d1-cta { display:inline-block; margin-top:8px; padding:7px 14px; border-radius:999px; background:#fa721e; color:#fff !important; font-weight:600; font-size:13px; text-decoration:none !important; border:2px solid #fff; box-shadow:0 0 0 2px #fa721e; }\n  #d1-wrap .d1-cta:hover, #d1-map .d1-cta:hover { background:#e8630f; }\n  #d1-wrap .d1-tab { padding:9px 20px; border-radius:999px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; background:#fff; color:#0e2952; border:2px solid #0e2952; }\n  #d1-wrap .d1-tab.active { background:#0e2952; color:#fff; }\n  #d1-wrap .d1-sugg li .d1-badge { display:inline-block; font-size:11px; font-weight:700; padding:1px 8px; border-radius:999px; margin-left:6px; vertical-align:1px; }\n  #d1-wrap .d1-badge-active { background:#e7f5ec; color:#177245; }\n  #d1-wrap .d1-badge-susp { background:#fdeee3; color:#c2410c; }\n  #d1-wrap .d1-note { font-size:12.5px; color:#5b6b82; margin:6px 2px 0; }';
   document.head.appendChild(style);
 
-  root.innerHTML = '<div id="d1-wrap" style="width:100%">\n  <form id="d1-search" style="display:flex;gap:10px;flex-wrap:wrap;margin:0 0 10px">\n    <div style="flex:1 1 260px;min-width:0;position:relative">\n      <input id="d1-q" class="d1-input" type="text" placeholder="Start typing an Austin address…" autocomplete="off" />\n      <ul id="d1-sugg" class="d1-sugg" hidden></ul>\n    </div>\n    <button type="submit" class="d1-btn d1-btn-primary">Search</button>\n    <button type="button" id="d1-locate" class="d1-btn d1-btn-secondary">&#9673; Use my location</button>\n  </form>\n  <div id="d1-result" style="min-height:24px;margin:0 0 10px;font-size:16px"></div>\n  <div id="d1-map" style="height:560px;width:100%;border-radius:16px;overflow:hidden;background:#f8f4ec;border:2px solid #0e2952"></div>\n</div>';
+  root.innerHTML = '<div id="d1-wrap" style="width:100%">\n  <div style="display:flex;gap:8px;margin:0 0 10px">\n    <button type="button" class="d1-tab active" data-tab="voter">Voter lookup</button>\n    <button type="button" class="d1-tab" data-tab="addr">Address search</button>\n  </div>\n  <form id="d1-vform" style="margin:0 0 10px">\n    <div style="position:relative">\n      <input id="d1-vq" class="d1-input" type="text" placeholder="Type a name to check voter registration (e.g. Smith John)…" autocomplete="off" />\n      <ul id="d1-vsugg" class="d1-sugg" hidden></ul>\n    </div>\n    <div class="d1-note">Searches the public Travis County voter roll for District 1 residents.</div>\n  </form>\n  <form id="d1-search" style="display:none;gap:10px;flex-wrap:wrap;margin:0 0 10px">\n    <div style="flex:1 1 260px;min-width:0;position:relative">\n      <input id="d1-q" class="d1-input" type="text" placeholder="Start typing an Austin address…" autocomplete="off" />\n      <ul id="d1-sugg" class="d1-sugg" hidden></ul>\n    </div>\n    <button type="submit" class="d1-btn d1-btn-primary">Search</button>\n    <button type="button" id="d1-locate" class="d1-btn d1-btn-secondary">&#9673; Use my location</button>\n  </form>\n  <div id="d1-result" style="min-height:24px;margin:0 0 10px;font-size:16px"></div>\n  <div id="d1-map" style="height:560px;width:100%;border-radius:16px;overflow:hidden;background:#f8f4ec;border:2px solid #0e2952"></div>\n</div>';
 
   // ---- load Leaflet (once), then boot ---------------------------
   function loadLeaflet(cb) {
@@ -52,16 +52,17 @@ function start(DATA_BASE) {
 
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 18,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &middot; Boundaries: City of Austin &amp; Travis County'
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &middot; Boundaries &amp; voter roll: City of Austin / Travis County'
   }).addTo(map);
 
   var precinctLayer, outlineLayer;
 
   Promise.all([
     fetch(base("d1-precincts.geojson")).then(function (r) { return r.json(); }),
-    fetch(base("d1-outline.geojson")).then(function (r) { return r.json(); })
+    fetch(base("d1-outline.geojson")).then(function (r) { return r.json(); }),
+    fetch(base("d1-voters.json")).then(function (r) { return r.json(); }).catch(function () { return {}; })
   ]).then(function (res) {
-    var precincts = res[0], outline = res[1];
+    var precincts = res[0], outline = res[1], voterCounts = res[2];
 
     // 1) Solid district shading underneath everything
     L.geoJSON(outline, { style: { stroke: false, fillColor: NAVY, fillOpacity: 0.28 }, interactive: false }).addTo(map);
@@ -70,7 +71,10 @@ function start(DATA_BASE) {
     precinctLayer = L.geoJSON(precincts, {
       style: { color: NAVY, weight: 1.2, opacity: 0.55, fillColor: NAVY, fillOpacity: 0 },
       onEachFeature: function (f, layer) {
-        layer.bindTooltip("Precinct " + f.properties.p, { sticky: true, className: "precinct-tip", direction: "top" });
+        var vc = voterCounts[String(f.properties.p)];
+        layer.bindTooltip("Precinct " + f.properties.p +
+          (vc ? '<br><span style="font-weight:400">' + vc.total.toLocaleString() + " registered &middot; " + vc.active.toLocaleString() + " active</span>" : ""),
+          { sticky: true, className: "precinct-tip", direction: "top" });
         layer.on({
           mouseover: function (e) { e.target.setStyle({ fillColor: ORANGE, fillOpacity: 0.45, color: ORANGE, weight: 2.5, opacity: 1 }); e.target.bringToFront(); },
           mouseout: function (e) { precinctLayer.resetStyle(e.target); }
@@ -140,7 +144,7 @@ function start(DATA_BASE) {
   }
 
   function enableLookup(precincts, outline) {
-    function showPoint(lat, lng, label) {
+    function showPoint(lat, lng, label, info) {
       var pt = [lng, lat];
       var inD1 = inFeature(pt, outline.features[0]);
       var pct = null;
@@ -152,6 +156,7 @@ function start(DATA_BASE) {
       var msg = inD1
         ? '<strong style="color:#fa721e">&#10003; In District 1</strong>' + (pct != null ? ' <span style="color:#0e2952">&middot; Precinct ' + pct + "</span>" : "")
         : '<strong style="color:#0e2952">Not in District 1</strong>';
+      if (info) msg = info + "<br>" + msg;
       if (label) msg += '<div style="font-size:13px;color:#5b6b82">' + label + "</div>";
       if (inD1 && label) {
         var parts = label.split(",").map(function (t) { return t.trim(); });
@@ -267,6 +272,105 @@ function start(DATA_BASE) {
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
+    });
+
+    // ---- Tabs (voter lookup <-> address search) ----------------
+    var vform = document.getElementById("d1-vform"),
+        vinput = document.getElementById("d1-vq"),
+        vsuggEl = document.getElementById("d1-vsugg"),
+        tabBtns = document.querySelectorAll("#d1-wrap .d1-tab");
+    Array.prototype.forEach.call(tabBtns, function (btn) {
+      btn.addEventListener("click", function () {
+        Array.prototype.forEach.call(tabBtns, function (b) { b.classList.toggle("active", b === btn); });
+        var voter = btn.getAttribute("data-tab") === "voter";
+        vform.style.display = voter ? "" : "none";
+        form.style.display = voter ? "none" : "flex";
+        setResult("");
+        (voter ? vinput : input).focus();
+      });
+    });
+
+    // ---- Voter lookup (Travis County public voter roll, District 1 only)
+    var voterIndex = null, voterLoading = null, vDebounce = null, vMatches = [], vActive = -1;
+    var V_SHOW = 12, V_CAP = 100;
+
+    function loadVoters() {
+      if (voterLoading) return voterLoading;
+      setResult("Loading voter list&hellip;");
+      voterLoading = fetch(base("d1-voter-index.json"))
+        .then(function (r) { return r.json(); })
+        .then(function (v) { voterIndex = v; setResult(""); return v; })
+        .catch(function () { voterLoading = null; setResult("Couldn't load the voter list. Please try again.", true); return []; });
+      return voterLoading;
+    }
+    function searchVoters(q) {
+      var toks = q.toUpperCase().split(/[\s,]+/).filter(Boolean), out = [];
+      if (!voterIndex || !toks.length) return out;
+      for (var i = 0; i < voterIndex.length; i++) {
+        var ok = true;
+        for (var t = 0; t < toks.length; t++) if (voterIndex[i][0].indexOf(toks[t]) === -1) { ok = false; break; }
+        if (ok) { out.push(voterIndex[i]); if (out.length >= V_CAP) break; }
+      }
+      return out;
+    }
+    function hideVsugg() { vsuggEl.hidden = true; vsuggEl.innerHTML = ""; vMatches = []; vActive = -1; }
+    function markV() { Array.prototype.forEach.call(vsuggEl.children, function (li, k) { li.classList.toggle("active", k === vActive); }); }
+    function renderVoters(list) {
+      vMatches = list; vActive = -1; vsuggEl.innerHTML = "";
+      if (!list.length) {
+        vsuggEl.innerHTML = '<li style="cursor:default;color:#5b6b82">No matching District 1 voters found</li>';
+        vsuggEl.hidden = false; return;
+      }
+      list.slice(0, V_SHOW).forEach(function (v, i) {
+        var li = document.createElement("li");
+        li.innerHTML = titleCase(v[0]) +
+          '<span class="d1-badge ' + (v[2] ? 'd1-badge-active">Active' : 'd1-badge-susp">Suspense') + "</span>" +
+          "<small>" + titleCase(v[3]) + " &middot; Precinct " + v[1] + "</small>";
+        li.addEventListener("mousedown", function (e) { e.preventDefault(); chooseVoter(i); });
+        vsuggEl.appendChild(li);
+      });
+      if (list.length > V_SHOW) {
+        var more = document.createElement("li");
+        more.style.cursor = "default"; more.style.color = "#5b6b82";
+        more.textContent = (list.length >= V_CAP ? V_CAP + "+" : list.length) + " matches — keep typing to narrow down";
+        vsuggEl.appendChild(more);
+      }
+      vsuggEl.hidden = false;
+    }
+    function chooseVoter(i) {
+      var v = vMatches[i]; if (!v) return;
+      hideVsugg();
+      vinput.value = titleCase(v[0]);
+      var info = "<strong>" + titleCase(v[0]) + "</strong> " +
+        '<span style="font-weight:600;color:' + (v[2] ? '#177245">Active' : '#c2410c">Suspense') + "</span>" +
+        ' <span style="color:#0e2952">&middot; Registered in Precinct ' + v[1] + "</span>";
+      setResult("Locating&hellip;");
+      geocode(v[3], null).then(function (c) {
+        if (c) showPoint(c.location.y, c.location.x, titleCase(c.address), info);
+        else setResult(info + '<div style="font-size:13px;color:#5b6b82">' + titleCase(v[3]) + " (couldn&rsquo;t place on the map)</div>");
+      }).catch(function () { setResult(info); });
+    }
+
+    vinput.addEventListener("input", function () {
+      var q = vinput.value.trim();
+      clearTimeout(vDebounce);
+      if (q.length < 3) { hideVsugg(); return; }
+      vDebounce = setTimeout(function () {
+        loadVoters().then(function () { if (vinput.value.trim() === q) renderVoters(searchVoters(q)); });
+      }, 200);
+    });
+    vinput.addEventListener("keydown", function (e) {
+      if (vsuggEl.hidden) return;
+      var n = Math.min(vMatches.length, V_SHOW);
+      if (e.key === "ArrowDown") { e.preventDefault(); vActive = Math.min(vActive + 1, n - 1); markV(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); vActive = Math.max(vActive - 1, 0); markV(); }
+      else if (e.key === "Enter") { e.preventDefault(); if (vMatches.length) chooseVoter(vActive >= 0 ? vActive : 0); }
+      else if (e.key === "Escape") hideVsugg();
+    });
+    vinput.addEventListener("blur", function () { setTimeout(hideVsugg, 150); });
+    vform.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (vMatches.length) chooseVoter(vActive >= 0 ? vActive : 0);
     });
   }
 }
