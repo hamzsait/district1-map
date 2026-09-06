@@ -323,9 +323,10 @@ function start(DATA_BASE) {
       }
       list.slice(0, V_SHOW).forEach(function (v, i) {
         var li = document.createElement("li");
+        var addr = v[3].indexOf("***") !== -1 ? "<em>Address confidential</em>" : titleCase(v[3]);
         li.innerHTML = titleCase(v[0]) +
           '<span class="d1-badge ' + (v[2] ? 'd1-badge-active">Active' : 'd1-badge-susp">Suspense') + "</span>" +
-          "<small>" + titleCase(v[3]) + " &middot; Precinct " + v[1] + "</small>";
+          "<small>" + addr + " &middot; Precinct " + v[1] + "</small>";
         li.addEventListener("mousedown", function (e) { e.preventDefault(); chooseVoter(i); });
         vsuggEl.appendChild(li);
       });
@@ -344,6 +345,10 @@ function start(DATA_BASE) {
       var info = "<strong>" + titleCase(v[0]) + "</strong> " +
         '<span style="font-weight:600;color:' + (v[2] ? '#177245">Active' : '#c2410c">Suspense') + "</span>" +
         ' <span style="color:#0e2952">&middot; Registered in Precinct ' + v[1] + "</span>";
+      if (v[3].indexOf("***") !== -1) {   // county-redacted (address confidentiality program)
+        setResult(info + '<div style="font-size:13px;color:#5b6b82">This voter&rsquo;s address is confidential in the county&rsquo;s public records, so it can&rsquo;t be shown on the map.</div>');
+        return;
+      }
       setResult("Locating&hellip;");
       geocode(v[3], null).then(function (c) {
         if (c) showPoint(c.location.y, c.location.x, titleCase(c.address), info);
