@@ -20,12 +20,35 @@
   if (root.getAttribute("data-d1-loaded")) return;   // guard against double-inclusion
   root.setAttribute("data-d1-loaded", "1");
 
+  // ---- which tools to show ------------------------------------
+  // data-mode="voter" | "address" | "polling" | comma list, on the
+  // #d1-map-root div (preferred) or the d1-map.js script tag. Default: all.
+  var modeAttr = root.getAttribute("data-mode") ||
+    (function () { var b = document.querySelector('script[src*="d1-map"]'); return (b && b.getAttribute("data-mode")) || ""; })();
+  var MODES = modeAttr.toLowerCase().split(/[\s,]+/).filter(function (m) {
+    return m === "voter" || m === "address" || m === "polling";
+  });
+  if (!MODES.length) MODES = ["voter", "address", "polling"];
+
   // ---- styles + markup -----------------------------------------
   var style = document.createElement("style");
   style.textContent = '#d1-wrap { font-family: inherit; color: #0e2952; }\n  #d1-map .leaflet-container { font: 13px/1.4 "Prompt", Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }\n  #d1-wrap .d1-input { width:100%; box-sizing:border-box; padding:12px 16px; border:2px solid #0e2952; border-radius:999px; font-size:16px; font-family:inherit; color:#0e2952; background:#fff; outline:none; }\n  #d1-wrap .d1-input:focus { box-shadow:0 0 0 3px rgba(250,114,30,.35); }\n  #d1-wrap .d1-input::placeholder { color:#6b7a90; }\n  #d1-wrap .d1-btn { padding:12px 22px; border-radius:999px; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; letter-spacing:.02em; white-space:nowrap; }\n  #d1-wrap .d1-btn-primary { background:#fa721e; color:#fff; border:2px solid #fff; box-shadow:0 0 0 2px #fa721e; }\n  #d1-wrap .d1-btn-primary:hover { background:#e8630f; }\n  #d1-wrap .d1-btn-secondary { background:#fff; color:#0e2952; border:2px solid #0e2952; }\n  #d1-wrap .d1-btn-secondary:hover { background:#f8f4ec; }\n  #d1-wrap .d1-sugg { position:absolute; left:12px; right:12px; top:calc(100% + 4px); z-index:2000; background:#fff; border:2px solid #0e2952; border-radius:14px; box-shadow:0 6px 18px rgba(14,41,82,.18); margin:0; padding:6px 0; list-style:none; max-height:280px; overflow-y:auto; }\n  #d1-wrap .d1-sugg li { padding:9px 16px; cursor:pointer; font-size:15px; line-height:1.3; color:#0e2952; }\n  #d1-wrap .d1-sugg li small { display:block; color:#5b6b82; font-size:12.5px; }\n  #d1-wrap .d1-sugg li:hover, #d1-wrap .d1-sugg li.active { background:#f8f4ec; }\n  #d1-map .precinct-tip { background:#0e2952; color:#fff; border:0; border-radius:8px; padding:5px 10px; font-weight:600; box-shadow:0 2px 8px rgba(14,41,82,.3); }\n  #d1-map .precinct-tip::before { display:none; }\n  #d1-map .d1-legend { background:#fff; color:#0e2952; padding:10px 12px; border-radius:10px; border:2px solid #0e2952; line-height:1.7; font-size:13px; }\n  #d1-map .d1-legend .sw { display:inline-block; width:22px; height:13px; vertical-align:middle; margin-right:7px; border-radius:3px; box-sizing:border-box; }\n  #d1-map .leaflet-popup-content-wrapper { border-radius:12px; border:2px solid #0e2952; box-shadow:0 6px 18px rgba(14,41,82,.2); color:#0e2952; }\n  #d1-map .leaflet-popup-tip { background:#0e2952; }\n  #d1-map .leaflet-bar a { color:#0e2952; }\n  #d1-map .leaflet-tile-pane { filter: saturate(.45) contrast(.92); }\n  #d1-map .leaflet-control-attribution a { color:#0e2952; }\n  #d1-wrap .d1-cta, #d1-map .d1-cta { display:inline-block; margin-top:8px; padding:7px 14px; border-radius:999px; background:#fa721e; color:#fff !important; font-weight:600; font-size:13px; text-decoration:none !important; border:2px solid #fff; box-shadow:0 0 0 2px #fa721e; }\n  #d1-wrap .d1-cta:hover, #d1-map .d1-cta:hover { background:#e8630f; }\n  #d1-wrap .d1-tab { padding:9px 20px; border-radius:999px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; background:#fff; color:#0e2952; border:2px solid #0e2952; }\n  #d1-wrap .d1-tab.active { background:#0e2952; color:#fff; }\n  #d1-wrap .d1-sugg li .d1-badge { display:inline-block; font-size:11px; font-weight:700; padding:1px 8px; border-radius:999px; margin-left:6px; vertical-align:1px; }\n  #d1-wrap .d1-badge-active { background:#e7f5ec; color:#177245; }\n  #d1-wrap .d1-badge-susp { background:#fdeee3; color:#c2410c; }\n  #d1-wrap .d1-note { font-size:12.5px; color:#5b6b82; margin:6px 2px 0; }';
   document.head.appendChild(style);
 
-  root.innerHTML = '<div id="d1-wrap" style="width:100%">\n  <div style="display:flex;gap:8px;margin:0 0 10px">\n    <button type="button" class="d1-tab active" data-tab="voter">Voter lookup</button>\n    <button type="button" class="d1-tab" data-tab="addr">Address search</button>\n  </div>\n  <form id="d1-vform" style="margin:0 0 10px">\n    <div style="position:relative">\n      <input id="d1-vq" class="d1-input" type="text" placeholder="Type a name to check voter registration (e.g. Smith John)…" autocomplete="off" />\n      <ul id="d1-vsugg" class="d1-sugg" hidden></ul>\n    </div>\n    <div class="d1-note">Searches the public Travis County voter roll for District 1 residents.</div>\n  </form>\n  <form id="d1-search" style="display:none;gap:10px;flex-wrap:wrap;margin:0 0 10px">\n    <div style="flex:1 1 260px;min-width:0;position:relative">\n      <input id="d1-q" class="d1-input" type="text" placeholder="Start typing an Austin address…" autocomplete="off" />\n      <ul id="d1-sugg" class="d1-sugg" hidden></ul>\n    </div>\n    <button type="submit" class="d1-btn d1-btn-primary">Search</button>\n    <button type="button" id="d1-locate" class="d1-btn d1-btn-secondary">&#9673; Use my location</button>\n  </form>\n  <div id="d1-result" style="min-height:24px;margin:0 0 10px;font-size:16px"></div>\n  <div id="d1-map" style="height:560px;width:100%;border-radius:16px;overflow:hidden;background:#f8f4ec;border:2px solid #0e2952"></div>\n</div>';
+  var TAB_LABELS = { voter: "Voter lookup", address: "Address search", polling: "Polling places" };
+  var FORMS = {
+    voter: '<form id="d1-vform" style="display:none;margin:0 0 10px">\n    <div style="position:relative">\n      <input id="d1-vq" class="d1-input" type="text" placeholder="Type a name to check voter registration (e.g. Smith John)…" autocomplete="off" />\n      <ul id="d1-vsugg" class="d1-sugg" hidden></ul>\n    </div>\n    <div class="d1-note">Searches the public Travis County voter roll for District 1 residents.</div>\n  </form>',
+    address: '<form id="d1-search" style="display:none;gap:10px;flex-wrap:wrap;margin:0 0 10px">\n    <div style="flex:1 1 260px;min-width:0;position:relative">\n      <input id="d1-q" class="d1-input" type="text" placeholder="Start typing an Austin address…" autocomplete="off" />\n      <ul id="d1-sugg" class="d1-sugg" hidden></ul>\n    </div>\n    <button type="submit" class="d1-btn d1-btn-primary">Search</button>\n    <button type="button" id="d1-locate" class="d1-btn d1-btn-secondary">&#9673; Use my location</button>\n  </form>',
+    polling: '<form id="d1-pform" style="display:none;gap:10px;flex-wrap:wrap;margin:0 0 10px">\n    <div style="flex:1 1 260px;min-width:0;position:relative">\n      <input id="d1-pq" class="d1-input" type="text" placeholder="Your address — we&rsquo;ll find your closest place to vote…" autocomplete="off" />\n      <ul id="d1-psugg" class="d1-sugg" hidden></ul>\n    </div>\n    <button type="submit" class="d1-btn d1-btn-primary">Find</button>\n    <button type="button" id="d1-plocate" class="d1-btn d1-btn-secondary">&#9673; Use my location</button>\n  </form>'
+  };
+  var tabBar = MODES.length > 1
+    ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px">' + MODES.map(function (m, i) {
+        return '<button type="button" class="d1-tab' + (i === 0 ? " active" : "") + '" data-tab="' + m + '">' + TAB_LABELS[m] + "</button>";
+      }).join("") + "</div>"
+    : "";
+  root.innerHTML = '<div id="d1-wrap" style="width:100%">\n  ' + tabBar + "\n  " +
+    MODES.map(function (m) { return FORMS[m]; }).join("\n  ") +
+    '\n  <div id="d1-result" style="min-height:24px;margin:0 0 10px;font-size:16px"></div>\n  <div id="d1-map" style="height:560px;width:100%;border-radius:16px;overflow:hidden;background:#f8f4ec;border:2px solid #0e2952"></div>\n</div>';
 
   // ---- load Leaflet (once), then boot ---------------------------
   function loadLeaflet(cb) {
@@ -233,6 +256,7 @@ function start(DATA_BASE) {
       else locate(sg.text, sg.magicKey);
     }
 
+    if (form) {
     input.addEventListener("input", function () {
       var q = input.value.trim();
       clearTimeout(debounceT);
@@ -273,22 +297,30 @@ function start(DATA_BASE) {
         { enableHighAccuracy: true, timeout: 10000 }
       );
     });
+    }   // end if (form)
 
-    // ---- Tabs (voter lookup <-> address search) ----------------
+    // ---- Tabs ---------------------------------------------------
     var vform = document.getElementById("d1-vform"),
         vinput = document.getElementById("d1-vq"),
         vsuggEl = document.getElementById("d1-vsugg"),
+        pform = document.getElementById("d1-pform"),
+        pinput = document.getElementById("d1-pq"),
+        psuggEl = document.getElementById("d1-psugg"),
         tabBtns = document.querySelectorAll("#d1-wrap .d1-tab");
-    Array.prototype.forEach.call(tabBtns, function (btn) {
-      btn.addEventListener("click", function () {
-        Array.prototype.forEach.call(tabBtns, function (b) { b.classList.toggle("active", b === btn); });
-        var voter = btn.getAttribute("data-tab") === "voter";
-        vform.style.display = voter ? "" : "none";
-        form.style.display = voter ? "none" : "flex";
-        setResult("");
-        (voter ? vinput : input).focus();
+    var tabForms = { voter: vform, address: form, polling: pform };
+    var tabInputs = { voter: vinput, address: input, polling: pinput };
+    function showTab(m, focus) {
+      Object.keys(tabForms).forEach(function (k) {
+        if (tabForms[k]) tabForms[k].style.display = (k === m) ? (k === "voter" ? "block" : "flex") : "none";
       });
+      Array.prototype.forEach.call(tabBtns, function (b) { b.classList.toggle("active", b.getAttribute("data-tab") === m); });
+      setResult("");
+      if (focus && tabInputs[m]) tabInputs[m].focus();
+    }
+    Array.prototype.forEach.call(tabBtns, function (btn) {
+      btn.addEventListener("click", function () { showTab(btn.getAttribute("data-tab"), true); });
     });
+    showTab(MODES[0], false);
 
     // ---- Voter lookup (Travis County public voter roll, District 1 only)
     var voterIndex = null, voterLoading = null, vDebounce = null, vMatches = [], vActive = -1;
@@ -356,6 +388,7 @@ function start(DATA_BASE) {
       }).catch(function () { setResult(info); });
     }
 
+    if (vform) {
     vinput.addEventListener("input", function () {
       var q = vinput.value.trim();
       clearTimeout(vDebounce);
@@ -377,6 +410,148 @@ function start(DATA_BASE) {
       e.preventDefault();
       if (vMatches.length) chooseVoter(vActive >= 0 ? vActive : 0);
     });
+    }   // end if (vform)
+
+    // ---- Polling place finder ----------------------------------
+    // Travis County uses countywide vote centers: any registered Travis
+    // County voter may vote at ANY location. We show the closest ones.
+    if (pform) {
+    var pollData = null, pollLoading = null, pDebounce = null, pSuggs = [], pActive = -1, pollMarkers = [];
+
+    function loadPolling() {
+      if (pollLoading) return pollLoading;
+      pollLoading = fetch(base("d1-polling.json"))
+        .then(function (r) { return r.json(); })
+        .then(function (d) { pollData = d; return d; })
+        .catch(function () { pollLoading = null; setResult("Couldn't load polling locations. Please try again.", true); return null; });
+      return pollLoading;
+    }
+    function milesBetween(aLat, aLng, bLat, bLng) {
+      var R = 3958.8, dLat = (bLat - aLat) * Math.PI / 180, dLng = (bLng - aLng) * Math.PI / 180;
+      var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(aLat * Math.PI / 180) * Math.cos(bLat * Math.PI / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      return 2 * R * Math.asin(Math.sqrt(h));
+    }
+    function nearest(lat, lng, kind) {
+      var best = null, bestD = Infinity;
+      for (var i = 0; i < pollData.length; i++) {
+        var s = pollData[i];
+        if (s.k !== kind && s.k !== "both") continue;
+        var d = milesBetween(lat, lng, s.lat, s.lng);
+        if (d < bestD) { bestD = d; best = s; }
+      }
+      return best ? { site: best, mi: bestD } : null;
+    }
+    function dirLink(fromLat, fromLng, site) {
+      return "https://www.google.com/maps/dir/?api=1&origin=" + fromLat + "," + fromLng +
+        "&destination=" + encodeURIComponent(site.a) + "&travelmode=driving";
+    }
+    function siteCard(title, hours, hit, fromLat, fromLng) {
+      var s = hit.site;
+      return '<div style="flex:1 1 240px;border:2px solid #0e2952;border-radius:14px;padding:12px 14px;background:#fff">' +
+        '<div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#fa721e">' + title + "</div>" +
+        '<div style="font-weight:700;margin:2px 0">' + s.n + "</div>" +
+        '<div style="font-size:13px;color:#5b6b82">' + (s.r ? s.r + " &middot; " : "") + s.a + "</div>" +
+        '<div style="font-size:13px;margin-top:4px">' + hit.mi.toFixed(1) + " mi away &middot; " + hours +
+        (s.ext ? " &middot; open until 10pm Oct 29&ndash;30" : "") +
+        (s.note ? "<br><em>" + s.note + "</em>" : "") + "</div>" +
+        '<a class="d1-cta" href="' + dirLink(fromLat, fromLng, s) + '" target="_blank" rel="noopener">Directions &rarr;</a></div>';
+    }
+    function showPolling(lat, lng, label) {
+      loadPolling().then(function (d) {
+        if (!d) return;
+        var ev = nearest(lat, lng, "ev"), ed = nearest(lat, lng, "ed");
+        pollMarkers.forEach(function (m) { map.removeLayer(m); });
+        pollMarkers = [];
+        if (marker) map.removeLayer(marker);
+        marker = L.circleMarker([lat, lng], { radius: 9, color: "#fff", weight: 3, fillColor: ORANGE, fillOpacity: 1 })
+          .addTo(map).bindPopup(label || "You are here");
+        var pts = [[lat, lng]];
+        [{ hit: ev, t: "Early voting" }, { hit: ed, t: "Election day" }].forEach(function (x) {
+          if (!x.hit) return;
+          var s = x.hit.site;
+          var m = L.circleMarker([s.lat, s.lng], { radius: 8, color: "#fff", weight: 3, fillColor: NAVY, fillOpacity: 1 })
+            .addTo(map).bindPopup("<strong>" + s.n + "</strong><br>" + x.t + " &middot; " + x.hit.mi.toFixed(1) + " mi<br>" + s.a +
+              '<br><a class="d1-cta" href="' + dirLink(lat, lng, s) + '" target="_blank" rel="noopener">Directions &rarr;</a>');
+          pollMarkers.push(m);
+          pts.push([s.lat, s.lng]);
+        });
+        var html = '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+          (ev ? siteCard("Closest early voting &middot; Oct 19&ndash;30", "7am&ndash;7pm daily", ev, lat, lng) : "") +
+          (ed ? siteCard("Closest on election day &middot; Tue Nov 3", "7am&ndash;7pm", ed, lat, lng) : "") + "</div>" +
+          '<div class="d1-note">Travis County uses vote centers &mdash; you can vote at <strong>any</strong> location in the county; these are just the closest to you.</div>';
+        setResult(html);
+        map.flyToBounds(L.latLngBounds(pts).pad(0.3), { maxZoom: 15 });
+      });
+    }
+
+    function pHideSugg() { psuggEl.hidden = true; psuggEl.innerHTML = ""; pSuggs = []; pActive = -1; }
+    function pRenderSugg(list) {
+      pSuggs = list; pActive = -1; psuggEl.innerHTML = "";
+      if (!list.length) { pHideSugg(); return; }
+      list.forEach(function (sg, i) {
+        var l = labelOf(sg), li = document.createElement("li");
+        li.innerHTML = l.main + (l.sub ? "<small>" + l.sub + "</small>" : "");
+        li.addEventListener("mousedown", function (e) { e.preventDefault(); pChoose(i); });
+        psuggEl.appendChild(li);
+      });
+      psuggEl.hidden = false;
+    }
+    function pLocate(text, magicKey) {
+      setResult("Searching&hellip;");
+      loadPolling();                                  // start the data fetch in parallel
+      geocode(text, magicKey).then(function (c) {
+        if (!c) { setResult("Couldn't find that address. Try adding the street name or ZIP code.", true); return; }
+        pinput.value = titleCase(c.address);
+        showPolling(c.location.y, c.location.x, titleCase(c.address));
+      }).catch(function () { setResult("Address lookup failed. Please try again.", true); });
+    }
+    function pChoose(i) {
+      var sg = pSuggs[i]; if (!sg) return;
+      pHideSugg();
+      var num = (pinput.value.trim().match(/^\d+[A-Za-z]?\b/) || [])[0];
+      if (num && !/^\d/.test(sg.text)) pLocate(num + " " + sg.text, null);
+      else pLocate(sg.text, sg.magicKey);
+    }
+    pinput.addEventListener("input", function () {
+      var q = pinput.value.trim();
+      clearTimeout(pDebounce);
+      if (q.length < 3) { pHideSugg(); return; }
+      pDebounce = setTimeout(function () {
+        suggest(q).then(function (list) { if (pinput.value.trim() === q) pRenderSugg(list); }).catch(function () {});
+      }, 250);
+    });
+    pinput.addEventListener("keydown", function (e) {
+      if (psuggEl.hidden) return;
+      if (e.key === "ArrowDown") { e.preventDefault(); pActive = Math.min(pActive + 1, pSuggs.length - 1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); pActive = Math.max(pActive - 1, 0); }
+      else if (e.key === "Enter" && pActive >= 0) { e.preventDefault(); pChoose(pActive); return; }
+      else if (e.key === "Escape") { pHideSugg(); return; }
+      Array.prototype.forEach.call(psuggEl.children, function (li, k) { li.classList.toggle("active", k === pActive); });
+    });
+    pinput.addEventListener("blur", function () { setTimeout(pHideSugg, 150); });
+    pform.addEventListener("submit", function (e) {
+      e.preventDefault();
+      clearTimeout(pDebounce);
+      var q = pinput.value.trim();
+      if (!q) return;
+      if (!psuggEl.hidden && pSuggs.length) { pChoose(pActive >= 0 ? pActive : 0); return; }
+      pHideSugg();
+      pLocate(q, null);
+    });
+    document.getElementById("d1-plocate").addEventListener("click", function () {
+      if (!navigator.geolocation) { setResult("Your browser doesn't support location.", true); return; }
+      setResult("Getting your location&hellip;");
+      loadPolling();
+      navigator.geolocation.getCurrentPosition(
+        function (pos) { showPolling(pos.coords.latitude, pos.coords.longitude, "Your current location"); },
+        function (err) {
+          setResult(err.code === 1 ? "Location access was denied. You can type an address instead." : "Couldn't get your location.", true);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+    }   // end if (pform)
   }
 }
 

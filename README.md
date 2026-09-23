@@ -11,6 +11,7 @@ Travis County registered voter list (a public record published by the county).
 | `d1-outline.geojson` | District 1 boundary (1 feature) |
 | `d1-precincts.geojson` | 36 Travis County voting precincts clipped to District 1; only property is `p` (precinct number) |
 | `d1-voters.json` | Registered/active voter counts per precinct (shown in hover tooltips) |
+| `d1-polling.json` | Travis County early-voting + election-day polling locations (geocoded) for the Nov 3, 2026 election |
 | `d1-voter-index.json` | `[name, precinct, active, registered address]` for District 1 voters only — powers the voter lookup; lazy-loaded (~4.4 MB) only when someone uses it |
 | `d1-map.js` | Tiny bootstrap the website points at. **Never changes.** Loads `d1-widget.js` from GitHub Pages |
 | `d1-widget.js` | The whole widget: markup, styles, Leaflet loader, search, geolocation |
@@ -32,11 +33,17 @@ address, and all other columns are dropped.
 
 ## Features
 
+Three tools, shown as tabs. Which ones appear is controlled by `data-mode` on the
+embed div (or the script tag): `voter`, `address`, `polling`, or a comma list —
+e.g. `<div id="d1-map-root" data-mode="polling"></div>` shows only the polling
+place finder, with no tab bar. Omit `data-mode` for all three.
+
 - **Voter lookup** (default tab) — type a name, get typeahead matches from the D1 voter roll with Active/Suspense status, registered address, and precinct; clicking a match pins the address on the map
 - District 1 outline + precinct boundaries with hover tooltips showing registered/active voter counts
 - **Address search with autocomplete** — suggestions as you type from the City of Austin's public address locator (ArcGIS, no API key); handles house-number ranges, not just mapped buildings
 - **Use my location** — browser geolocation (requires HTTPS, which Squarespace provides; the user must click "Allow")
 - When the address is in District 1, a **Request a yard sign →** button links to `/request-a-yard-sign?street=…&city=…&state=…&zip=…`
+- **Polling place finder** — enter an address (same typeahead) or use your location; shows the closest early-voting site (Oct 19–30) and closest election-day site (Nov 3) with distance, hours, and a Google Maps driving-directions link. Data from the county's official location flyers, rebuilt with `scripts/build-polling.py`. Travis County uses countywide vote centers, and the UI says so — any location works.
 - Either one drops a pin and reports **In District 1 · Precinct N** or **Not in District 1**, computed in-browser against the GeoJSON — no server involved
 
 The geocoder is `maps.austintexas.gov/arcgis/rest/services/Geocode/COA_Locator` — the City's own public service, so it knows Austin addresses better than any general geocoder. If it were ever retired, `suggest()`/`geocode()` in `embed.html` are the only two functions to swap.
