@@ -166,6 +166,20 @@ Options (`data-*` on `#pg-root`):
 5. Set the spreadsheet's sharing back to **Restricted**. The form keeps writing
    to it; the widget keeps reading counts through the script.
 
+**Keep it fast (run once, after pasting a new `Code.gs`):** pick `setup` in the
+function dropdown and click **Run**. It adds a 1-minute trigger that precomputes
+the answer, so requests never wait on reading the sheet.
+
+**Speed.** Apps Script web apps typically answer in 1–5 s with occasional
+30 s+ spikes, so the widget never waits on it: pins draw immediately (showing
+`·`), counts fill in when they arrive, and each browser remembers the last
+counts (localStorage) so repeat visits show numbers instantly. For first-time
+visitors, add a fast snapshot: in the sheet add a tab `counts` with
+`=FILTER(Sheet1!H:H, ISNUMBER(SEARCH("PG|v1|", Sheet1!H:H)))`, then
+*File → Share → Publish to web → counts → CSV*, and put that URL in
+`SNAPSHOT_URL` in `pg-widget.js`. Google serves it in ~0.2 s (≤5 min stale);
+the widget shows it first, then swaps in the live numbers.
+
 To change the script later: edit, then **Deploy → Manage deployments → edit
 (pencil) → Version: New version → Deploy**. That keeps the same URL. A *new
 deployment* would create a new URL.

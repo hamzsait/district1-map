@@ -18,6 +18,9 @@
  *   data-api       Apps Script web-app URL            (default: API_URL below)
  *   data-sheet     Google Sheet id                    (default: campaign sheet)
  *   data-gid       tab id within the sheet            (default: 0)
+ *   data-snapshot  "Publish to web" CSV of a tab holding only the PG|v1| column
+ *                  (default: SNAPSHOT_URL below). Served fast by Google, ~5 min
+ *                  behind — shown first, then replaced by the live data-api answer.
  *   data-csv       "Publish to web" CSV URL — use instead of data-sheet if the
  *                  sheet itself is private (recommended; see README)
  *   data-form      form page URL                      (default: /data-feed)
@@ -48,8 +51,12 @@
   // Apps Script web-app URL (Deploy → Manage deployments → Web app URL).
   var API_URL = "https://script.google.com/macros/s/AKfycbxsjoJFc-eQWUfFJ1CmlVppWCkkmSf2iAx0wz-gWagcSzaA1YeVs_CQxnzxUx22loAc/exec";
 
+  // Optional fast snapshot: File → Share → Publish to web → the "counts" tab → CSV.
+  var SNAPSHOT_URL = "";
+
   var CFG = {
     api:    opt("api", API_URL),
+    snap:   opt("snapshot", SNAPSHOT_URL),
     sheet:  opt("sheet", "14iAFtDRyREOr9N1LoYHdSxIJyP7d_rEBuTwzK_tOKEU"),
     gid:    opt("gid", "0"),
     csv:    opt("csv", ""),
@@ -260,9 +267,16 @@
   }
 
   // ---- read sign-ups from the Google Sheet -----------------------
+  function csvRows(url) {
+    return fetch(url + (url.indexOf("?") === -1 ? "?" : "&") + "_=" + Date.now())
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+      .then(parseCsv);
+  }
   function sheetRows() {
     if (CFG.api) {         // one "row" per PG|v1| key — same shape the parser expects
-      return fetch(CFG.api + (CFG.api.indexOf("?") === -1 ? "?" : "&") + "_=" + Date.now())
+      var ctl = window.AbortController ? new AbortController() : null;
+      if (ctl) setTimeout(function () { ctl.abort(); }, 45000);
+      return fetch(CFG.api + (CFG.api.indexOf("?") === -1 ? "?" : "&") + "_=" + Date.now(), ctl ? { signal: ctl.signal } : {})
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
         .then(function (j) { return (j.keys || []).map(function (k) { return [k]; }); });
     }
@@ -391,7 +405,6 @@
   // =================================================================
   function start() {
     var NAVY = "#0e2952";
-    function base(p) { return (DATA_BASE ? DATA_BASE.replace(/\/$/, "") + "/" : "") + p; }
 
     var map = L.map("pg-map", { scrollWheelZoom: false, zoomControl: true, zoomSnap: 0.25 }).setView([30.3, -97.68], 12);
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -417,25 +430,54 @@
       return n;
     }
 
-    function loadCounts() {
-      statusEl.textContent = "Loading sign-ups…";
-      return sheetRows().then(function (rows) {
-        counts = {};
-        rows.forEach(function (r) {
-          for (var i = 0; i < r.length; i++) { var s = decodeKey(r[i]); if (s) { addSignup(s.site, s.slots); break; } }
-        });
-        statusEl.textContent = "";
+    // ---- sign-up counts: shown from this browser's last copy right away,
+    // then replaced when the (slow) sheet endpoint answers. Pins never wait.
+    var CACHE_KEY = "pg-keys-v1", countsKnown = false, serverKeys = [], localKeys = [];
+    function keysOf(rows) {
+      var out = [];
+      rows.forEach(function (r) { for (var i = 0; i < r.length; i++) if (decodeKey(r[i])) { out.push(r[i].slice(r[i].indexOf("PG|v1|")).trim()); break; } });
+      return out;
+    }
+    function rebuildCounts() {
+      counts = {};
+      // Sign-ups made in this tab count until the sheet reflects them (matched by exact key).
+      var pending = localKeys.slice();
+      serverKeys.forEach(function (k) { var j = pending.indexOf(k); if (j !== -1) pending.splice(j, 1); });
+      serverKeys.concat(pending).forEach(function (k) { var s = decodeKey(k); if (s) addSignup(s.site, s.slots); });
+    }
+    function refreshViews() {
+      if (!sites.length) return;
+      drawMarkers();
+      var a = document.activeElement;
+      if (!(a && panel.contains(a) && /INPUT|SELECT|TEXTAREA/.test(a.tagName))) renderPanel();   // don't yank focus mid-typing
+    }
+    try {
+      var cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+      if (cached && cached.keys) { serverKeys = cached.keys; countsKnown = true; rebuildCounts(); }
+    } catch (e) {}
+    statusEl.textContent = countsKnown ? "Updating sign-up counts…" : "Loading sign-up counts…";
+
+    function loadCounts(p, retry) {
+      p.then(function (rows) {
+        serverKeys = keysOf(rows); countsKnown = true; liveLoaded = true;
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ keys: serverKeys, at: Date.now() })); } catch (e) {}
+        rebuildCounts(); statusEl.textContent = ""; refreshViews();
       }).catch(function (e) {
-        console.error("poll-greet: sheet", e);
-        statusEl.textContent = "Couldn’t load current sign-up counts.";
+        console.error("poll-greet: counts", e);
+        if (retry) { setTimeout(function () { loadCounts(sheetRows(), false); }, 3000); return; }
+        statusEl.textContent = countsKnown ? "Showing recent sign-up counts." : "Couldn’t load sign-up counts — you can still sign up.";
+        if (!countsKnown) { countsKnown = true; refreshViews(); }
       });
     }
+    var liveLoaded = false;
+    if (EARLY.snap) EARLY.snap.then(function (rows) {      // fast, slightly stale — only until the live answer lands
+      if (liveLoaded) return;
+      serverKeys = keysOf(rows); countsKnown = true; rebuildCounts(); refreshViews();
+      statusEl.textContent = "Updating sign-up counts\u2026";
+    }).catch(function (e) { console.warn("poll-greet: snapshot", e); });
+    loadCounts(EARLY.counts, true);
 
-    Promise.all([
-      fetch(base("d1-outline.geojson")).then(function (r) { return r.json(); }),
-      fetch(base("d1-polling.json")).then(function (r) { return r.json(); }),
-      loadCounts()
-    ]).then(function (res) {
+    Promise.all([EARLY.outline, EARLY.polling]).then(function (res) {
       var outline = res[0], d1 = outline.features[0];
       L.geoJSON(outline, { style: { stroke: false, fillColor: NAVY, fillOpacity: 0.2 }, interactive: false }).addTo(map);
       var ol = L.geoJSON(outline, { style: { color: NAVY, weight: 3.5, opacity: 1, fill: false }, interactive: false }).addTo(map);
@@ -486,14 +528,14 @@
       markers = {};
       sites.forEach(function (s) {
         if (state.filterDay && s.days.indexOf(state.filterDay) === -1) return;
-        var n = siteTotal(s.n, state.filterDay), sel = state.site === s;
+        var n = siteTotal(s.n, state.filterDay), sel = state.site === s, label = countsKnown ? n : "·";
         var icon = L.divIcon({
           className: "", iconSize: [30, 30], iconAnchor: [15, 15],
-          html: '<div class="pg-pin ' + (s.k === "both" ? "ev" : "ed") + (s.inD1 ? "" : " near") + (sel ? " sel" : "") + '">' + n + "</div>"
+          html: '<div class="pg-pin ' + (s.k === "both" ? "ev" : "ed") + (s.inD1 ? "" : " near") + (sel ? " sel" : "") + '">' + label + "</div>"
         });
         var m = L.marker([s.lat, s.lng], { icon: icon, zIndexOffset: sel ? 1000 : (s.k === "both" ? 500 : 0), keyboard: true, title: s.n })
           .addTo(map)
-          .bindTooltip(esc(s.n) + '<br><span style="font-weight:400">' + n + " sign-up" + (n === 1 ? "" : "s") + (state.filterDay ? " on " + dayLabel(state.filterDay) : "") + "</span>",
+          .bindTooltip(esc(s.n) + '<br><span style="font-weight:400">' + (countsKnown ? n + " sign-up" + (n === 1 ? "" : "s") + (state.filterDay ? " on " + dayLabel(state.filterDay) : "") : "loading sign-ups…") + "</span>",
             { className: "pg-tip", direction: "top", offset: [0, -14] })
           .on("click", function () { selectSite(s); });
         markers[s.n] = m;
@@ -542,15 +584,15 @@
       html += '<span class="pg-label">1 &middot; Pick a day</span><div class="pg-chips">' + s.days.map(function (d) {
         var past = isPast(d, 23), n = siteTotal(s.n, d), mine = pickedKeys().some(function (k) { return k.indexOf(d) === 0; });
         return '<button type="button" class="pg-chip' + (d === state.day ? " on" : "") + (mine ? " has" : "") + '" data-day="' + d + '"' + (past ? " disabled" : "") + ">" +
-          dayLabel(d) + "<small>" + n + " signed up</small></button>";
+          dayLabel(d) + "<small>" + (countsKnown ? n + " signed up" : "…") + "</small></button>";
       }).join("") + "</div>";
 
       // Hours
       html += '<span class="pg-label">2 &middot; Pick hours <span style="text-transform:none;letter-spacing:0;font-weight:500;color:#5b6b82">(pick as many as you like)</span></span><div class="pg-slots">' +
         siteHours(s, state.day).map(function (h) {
           var key = slotKey(state.day, h), n = countOf(s.n, key), on = !!state.picked[key], past = isPast(state.day, h);
-          var cls = "pg-slot" + (on ? " on" : "") + (n >= CFG.target ? " full" : n === 0 ? " need" : "");
-          var sub = n === 0 ? "Needs greeters" : n + " signed up";
+          var cls = "pg-slot" + (on ? " on" : "") + (!countsKnown ? "" : n >= CFG.target ? " full" : n === 0 ? " need" : "");
+          var sub = !countsKnown ? "…" : n === 0 ? "Needs greeters" : n + " signed up";
           return '<button type="button" class="' + cls + '" data-slot="' + key + '"' + (past ? " disabled" : "") + ' aria-pressed="' + on + '"><b>' + rangeLabel(h, h + 1) + "</b><span>" + sub + "</span></button>";
         }).join("") + "</div>";
 
@@ -613,7 +655,7 @@
       btn.disabled = true; btn.innerHTML = '<span class="pg-spin"></span>Signing you up…';
 
       submitSignup(v).then(function () {
-        addSignup(s.n, picked);
+        localKeys.push(v.key); rebuildCounts();
         var summary = esc(shiftText(picked));
         state.picked = {}; state.form.notes = "";
         state.msg = { ok: true, html: "<strong>You’re signed up, " + esc(v.fname) + "!</strong><br>" + esc(s.n) + " &middot; " + summary +
@@ -625,5 +667,16 @@
     }
   }
 
+  // Start every network request now, in parallel with loading Leaflet —
+  // the counts endpoint (Apps Script) can take several seconds.
+  function dataUrl(p) { return (DATA_BASE ? DATA_BASE.replace(/\/$/, "") + "/" : "") + p; }
+  var EARLY = {
+    outline: fetch(dataUrl("d1-outline.geojson")).then(function (r) { return r.json(); }),
+    polling: fetch(dataUrl("d1-polling.json")).then(function (r) { return r.json(); }),
+    counts:  sheetRows(),
+    snap:    CFG.snap && CFG.api ? csvRows(CFG.snap) : null
+  };
+  EARLY.counts.catch(function () {});
+  if (EARLY.snap) EARLY.snap.catch(function () {});              // handled in start(); avoid unhandled-rejection noise
   loadLeaflet(start);
 })();

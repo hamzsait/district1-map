@@ -3,22 +3,37 @@
  *
  * Paste into the sign-up sheet's Apps Script editor (Extensions → Apps Script)
  * and deploy as a web app (Execute as: Me, Who has access: Anyone).
+ * Then run setup() once (pick it in the function dropdown → Run) so the
+ * answer is precomputed every minute and requests never wait on the sheet.
  *
  * Returns ONLY the machine-readable "PG|v1|<site>|<slots>" cells, e.g.
  *   {"keys":["PG|v1|Millennium Youth Entertainment Complex|2026-10-24 08,09"],"updated":"…"}
  * Names, emails and phone numbers never leave the sheet, so the spreadsheet
  * itself can stay private.
  */
-var SHEET_GID = 0;   // tab the Squarespace form writes to
+var SHEET_GID = 0;            // tab the Squarespace form writes to
+var CACHE_KEY = "pg-keys";
 
 function doGet() {
-  var cache = CacheService.getScriptCache();
-  var body = cache.get("pg-keys");
-  if (!body) {
-    body = JSON.stringify({ keys: readKeys(), updated: new Date().toISOString() });
-    cache.put("pg-keys", body, 15);          // at most one sheet read per 15 s
-  }
+  var body = CacheService.getScriptCache().get(CACHE_KEY) || refresh();
   return ContentService.createTextOutput(body).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Reads the sheet and caches the answer. Runs every minute via setup()'s
+// trigger (and on demand if the cache is ever empty).
+function refresh() {
+  var body = JSON.stringify({ keys: readKeys(), updated: new Date().toISOString() });
+  CacheService.getScriptCache().put(CACHE_KEY, body, 21600);   // max 6 h; the trigger replaces it every minute
+  return body;
+}
+
+// Run once by hand after pasting this file.
+function setup() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === "refresh") ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger("refresh").timeBased().everyMinutes(1).create();
+  refresh();
 }
 
 function readKeys() {
