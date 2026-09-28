@@ -9,7 +9,7 @@ Travis County registered voter list (a public record published by the county).
 | File | What |
 |------|------|
 | `d1-outline.geojson` | District 1 boundary (1 feature) |
-| `d1-precincts.geojson` | 36 Travis County voting precincts clipped to District 1; only property is `p` (precinct number) |
+| `d1-precincts.geojson` | 38 Travis County voting precincts clipped to District 1 (rebuilt Sep 28, 2026 from the county's Sep 9 precinct update); only property is `p` (precinct number) |
 | `d1-voters.json` | Registered/active voter counts per precinct (shown in hover tooltips) |
 | `d1-polling.json` | Travis County early-voting + election-day polling locations (geocoded) for the Nov 3, 2026 election |
 | `d1-voter-index.json` | `[name, precinct, active, registered address]` for District 1 voters only — powers the voter lookup; lazy-loaded (~4.4 MB) only when someone uses it |
