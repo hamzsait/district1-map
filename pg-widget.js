@@ -107,13 +107,16 @@
     '#pg-wrap .pg-b-in { background:#0e2952; color:#fff; }',
     '#pg-wrap .pg-b-near { background:#e8eef5; color:#0e2952; }',
     '#pg-wrap .pg-b-ev { background:#fdeee3; color:#c2410c; }',
-    '#pg-wrap .pg-chips { display:flex; gap:6px; flex-wrap:wrap; }',
-    '#pg-wrap .pg-chip { padding:6px 11px; border-radius:999px; border:2px solid #0e2952; background:#fff; color:#0e2952; font:600 13px/1.2 inherit; font-family:inherit; cursor:pointer; text-align:center; }',
-    '#pg-wrap .pg-chip small { display:block; font-weight:500; font-size:11px; opacity:.8; }',
+    // Day buttons: rounded rectangles in a grid. Sizes are pinned with !important
+    // because the Squarespace theme styles every <button> (big font, padding).
+    '#pg-wrap .pg-chips { display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:6px; }',
+    '#pg-wrap .pg-chip { margin:0 !important; padding:7px 4px !important; width:auto !important; height:auto !important; min-height:0 !important; border-radius:12px !important; border:2px solid #0e2952; background:#fff; color:#0e2952; font-family:inherit; font-size:13px !important; line-height:1.25 !important; font-weight:600 !important; letter-spacing:0 !important; text-transform:none !important; white-space:nowrap; cursor:pointer; text-align:center; }',
+    '#pg-wrap .pg-chip small { display:block; font-weight:500; font-size:11px !important; line-height:1.3 !important; opacity:.85; }',
+    '#pg-wrap .pg-chip:disabled { opacity:.35; cursor:not-allowed; }',
     '#pg-wrap .pg-chip.on { background:#0e2952; color:#fff; }',
     '#pg-wrap .pg-chip.has { box-shadow:inset 0 -3px 0 #fa721e; }',
     '#pg-wrap .pg-slots { display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:6px; }',
-    '#pg-wrap .pg-slot { padding:8px 6px; border-radius:12px; border:2px solid #0e2952; background:#fff; color:#0e2952; font-family:inherit; cursor:pointer; text-align:center; line-height:1.25; }',
+    '#pg-wrap .pg-slot { margin:0 !important; padding:8px 6px !important; width:auto !important; height:auto !important; border-radius:12px !important; border:2px solid #0e2952; background:#fff; color:#0e2952; font-family:inherit; font-size:13px !important; letter-spacing:0 !important; text-transform:none !important; cursor:pointer; text-align:center; line-height:1.25 !important; }',
     '#pg-wrap .pg-slot b { display:block; font-size:14px; }',
     '#pg-wrap .pg-slot span { font-size:11.5px; }',
     '#pg-wrap .pg-slot.need span { color:#c2410c; font-weight:600; }',
@@ -539,7 +542,7 @@
       html += '<span class="pg-label">1 &middot; Pick a day</span><div class="pg-chips">' + s.days.map(function (d) {
         var past = isPast(d, 23), n = siteTotal(s.n, d), mine = pickedKeys().some(function (k) { return k.indexOf(d) === 0; });
         return '<button type="button" class="pg-chip' + (d === state.day ? " on" : "") + (mine ? " has" : "") + '" data-day="' + d + '"' + (past ? " disabled" : "") + ">" +
-          dayLabel(d).replace(/^(\w+) /, "$1<br>") + "<small>" + n + " signed up</small></button>";
+          dayLabel(d) + "<small>" + n + " signed up</small></button>";
       }).join("") + "</div>";
 
       // Hours
@@ -561,7 +564,8 @@
         '<div class="pg-grid2"><input class="pg-input" name="fname" placeholder="First name" autocomplete="given-name" required value="' + esc(f.fname) + '">' +
         '<input class="pg-input" name="lname" placeholder="Last name" autocomplete="family-name" required value="' + esc(f.lname) + '"></div>' +
         '<div class="pg-grid2" style="margin-top:8px"><input class="pg-input" name="email" type="email" placeholder="Email" autocomplete="email" required value="' + esc(f.email) + '">' +
-        '<input class="pg-input" name="phone" type="tel" placeholder="Phone" autocomplete="tel-national" value="' + esc(f.phone) + '"></div>' +
+        '<input class="pg-input" name="phone" type="tel" placeholder="Phone" autocomplete="tel-national" required value="' + esc(f.phone) + '"></div>' +
+        '<div class="pg-muted" style="margin:6px 2px 0">We\u2019ll use your email and phone to confirm your shift and send details.</div>' +
         '<input class="pg-input" name="notes" style="margin-top:8px" placeholder="Notes (optional) — e.g. bringing a friend" value="' + esc(f.notes) + '">' +
         '<button type="submit" class="pg-btn" id="pg-submit">Sign me up' + (picked.length ? " for " + picked.length + " hour" + (picked.length === 1 ? "" : "s") : "") + "</button>" +
         "</form>";
@@ -596,7 +600,7 @@
       if (!f.fname.trim() || !f.lname.trim()) return fail("Please enter your first and last name.");
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) return fail("Please enter a valid email address.");
       var digits = f.phone.replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
-      if (f.phone.trim() && digits.length !== 10) return fail("Please enter a 10-digit phone number (or leave it blank).");
+      if (digits.length !== 10) return fail("Please enter a 10-digit phone number so we can reach you.");
 
       var v = {
         fname: f.fname.trim(), lname: f.lname.trim(), email: f.email.trim(), phone: digits,
