@@ -194,7 +194,8 @@
       tipCount: function (n) { return n + " sign-up" + (n === 1 ? "" : "s"); }, tipOn: " on ", tipLoading: "loading sign-ups\u2026",
       loadingLatest: "Loading the latest sign-ups\u2026", showingSavedUntil: function (t) { return "Showing counts saved at " + t + " until it finishes. "; },
       canTake: "This can take up to a minute \u2014 you can browse and sign up in the meantime.",
-      checking: "Checking for new sign-ups\u2026", upToDate: "Up to date", asOf: function (t) { return "sign-ups as of " + t; }, refresh: "Refresh",
+      checking: "Checking for new sign-ups\u2026", upToDate: "Up to date", staleTitle: "Sign-ups may be out of date",
+      staleNote: "The sign-up sheet hasn\u2019t been re-read recently.", asOf: function (t) { return "sign-ups as of " + t; }, refresh: "Refresh",
       loadFailed: "Couldn\u2019t load the latest sign-ups.", showingSaved: function (t) { return "Showing counts saved at " + t + ". "; },
       canStill: "You can still sign up. ", tryAgain: "Try again",
       choose: "Choose a polling place\u2026", inD1: "In District 1", nearD1: "Near District 1", optBoth: " (early + Election Day)",
@@ -224,7 +225,8 @@
       tipCount: function (n) { return n + (n === 1 ? " inscrito" : " inscritos"); }, tipOn: " el ", tipLoading: "cargando inscripciones\u2026",
       loadingLatest: "Cargando las inscripciones más recientes\u2026", showingSavedUntil: function (t) { return "Mientras tanto, mostramos los datos guardados a las " + t + ". "; },
       canTake: "Esto puede tardar hasta un minuto; mientras tanto puedes explorar e inscribirte.",
-      checking: "Buscando nuevas inscripciones\u2026", upToDate: "Actualizado", asOf: function (t) { return "inscripciones a las " + t; }, refresh: "Actualizar",
+      checking: "Buscando nuevas inscripciones\u2026", upToDate: "Actualizado", staleTitle: "Es posible que las inscripciones no estén al día",
+      staleNote: "La hoja de inscripciones no se ha leído recientemente.", asOf: function (t) { return "inscripciones a las " + t; }, refresh: "Actualizar",
       loadFailed: "No se pudieron cargar las inscripciones más recientes.", showingSaved: function (t) { return "Mostrando los datos guardados a las " + t + ". "; },
       canStill: "Aún puedes inscribirte. ", tryAgain: "Reintentar",
       choose: "Elige un lugar de votación\u2026", inD1: "En el Distrito 1", nearD1: "Cerca del Distrito 1", optBoth: " (anticipada + Día de las elecciones)",
@@ -355,7 +357,11 @@
       if (ctl) setTimeout(function () { ctl.abort(); }, 45000);
       return fetch(CFG.api + (CFG.api.indexOf("?") === -1 ? "?" : "&") + "_=" + Date.now(), ctl ? { signal: ctl.signal } : {})
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-        .then(function (j) { return (j.keys || []).map(function (k) { return [k]; }); });
+        .then(function (j) {
+          var rows = (j.keys || []).map(function (k) { return [k]; });
+          rows.readAt = Date.parse(j.updated) || 0;       // when the script actually read the sheet
+          return rows;
+        });
     }
     if (CFG.csv) {
       return fetch(CFG.csv + (CFG.csv.indexOf("?") === -1 ? "?" : "&") + "_=" + Date.now())
@@ -642,20 +648,22 @@
         : (LANG === "es" ? d.getDate() + " " + MON_ES[d.getMonth()] : MON[d.getMonth()] + " " + d.getDate()) + ", " + t;
     }
     function renderLive() {
-      var secs = Math.round((Date.now() - live.started) / 1000), h;
+      var secs = Math.round((Date.now() - live.started) / 1000), h,
+          stale = live.mode === "ok" && Date.now() - liveAt > 10 * 60000;   // server answer older than 10 min
       if (live.mode === "loading") {
         h = '<span class="pg-spin pg-spin-dark"></span><div><strong>' + T("loadingLatest") + '</strong> <span class="pg-live-secs">' + secs + "s</span>" +
             '<div class="pg-live-sub">' + (countsKnown && savedAt ? T("showingSavedUntil", whenText(savedAt)) : "") + T("canTake") + "</div></div>";
       } else if (live.mode === "ok") {
         h = (live.busy ? '<span class="pg-spin pg-spin-dark"></span>' : '<span class="pg-live-dot"></span>') + "<div>" +
             (live.busy ? T("checking")
-                       : "<strong>" + T("upToDate") + "</strong> &middot; " + T("asOf", whenText(liveAt)) + ' &nbsp;<a href="#" class="pg-link" data-live-refresh>' + T("refresh") + "</a>") + "</div>";
+                       : "<strong>" + (stale ? T("staleTitle") : T("upToDate")) + "</strong> &middot; " + T("asOf", whenText(liveAt)) +
+                         (stale ? ". " + T("staleNote") : "") + ' &nbsp;<a href="#" class="pg-link" data-live-refresh>' + T("refresh") + "</a>") + "</div>";
       } else {
         h = "<div><strong>" + T("loadFailed") + "</strong> " +
             (countsKnown && savedAt ? T("showingSaved", whenText(savedAt)) : T("canStill")) +
             '<a href="#" class="pg-link" data-live-refresh>' + T("tryAgain") + "</a></div>";
       }
-      liveEl.className = "pg-live " + live.mode;
+      liveEl.className = "pg-live " + (stale ? "err" : live.mode);
       liveEl.innerHTML = h;
       var r = liveEl.querySelector("[data-live-refresh]");
       if (r) r.addEventListener("click", function (e) { e.preventDefault(); fetchLatest(sheetRows(), live.mode === "err"); });
@@ -668,7 +676,9 @@
       liveTick = setInterval(function () { if (live.mode === "loading") renderLive(); }, 1000);
       renderLive();
       p.then(function (rows) {
-        serverKeys = keysOf(rows); countsKnown = true; liveAt = savedAt = Date.now();
+        // "As of" = when the sheet was read (server time), not when we received it,
+        // so a stale server-side answer is visible instead of looking fresh.
+        serverKeys = keysOf(rows); countsKnown = true; liveAt = savedAt = rows.readAt || Date.now();
         try { localStorage.setItem(CACHE_KEY, JSON.stringify({ keys: serverKeys, at: savedAt })); } catch (e) {}
         rebuildCounts(); refreshViews();
         live.mode = "ok";
