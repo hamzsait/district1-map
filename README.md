@@ -45,6 +45,7 @@ place finder, with no tab bar. Omit `data-mode` for all three.
 - When the address is in District 1, a **Request a yard sign →** button links to `/request-a-yard-sign?street=…&city=…&state=…&zip=…`
 - **Polling place finder** — enter an address (same typeahead) or use your location; shows the closest early-voting site (Oct 19–30) and closest election-day site (Nov 3) with distance, hours, and a Google Maps driving-directions link. Data from the county's official location flyers, rebuilt with `scripts/build-polling.py`. Travis County uses countywide vote centers, and the UI says so — any location works.
 - Either one drops a pin and reports **In District 1 · Precinct N** or **Not in District 1**, computed in-browser against the GeoJSON — no server involved
+- **Español** — an English/Español button (top right) switches all three tools, including results, map popups, tooltips and the legend. Spanish is also chosen automatically for browsers set to Spanish, remembered per visitor (shared with the poll-greeting widget), and can be forced with `?lang=es` (or `?lang=en`) on the page URL. Voter names, addresses and polling-site names stay as the county publishes them.
 
 The geocoder is `maps.austintexas.gov/arcgis/rest/services/Geocode/COA_Locator` — the City's own public service, so it knows Austin addresses better than any general geocoder. If it were ever retired, `suggest()`/`geocode()` in `embed.html` are the only two functions to swap.
 

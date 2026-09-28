@@ -35,20 +35,116 @@
   style.textContent = '#d1-wrap { font-family: inherit; color: #0e2952; }\n  #d1-map .leaflet-container { font: 13px/1.4 "Prompt", Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }\n  #d1-wrap .d1-input { width:100%; box-sizing:border-box; padding:12px 16px; border:2px solid #0e2952; border-radius:999px; font-size:16px; font-family:inherit; color:#0e2952; background:#fff; outline:none; }\n  #d1-wrap .d1-input:focus { box-shadow:0 0 0 3px rgba(250,114,30,.35); }\n  #d1-wrap .d1-input::placeholder { color:#6b7a90; }\n  #d1-wrap .d1-btn { padding:12px 22px; border-radius:999px; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; letter-spacing:.02em; white-space:nowrap; }\n  #d1-wrap .d1-btn-primary { background:#fa721e; color:#fff; border:2px solid #fff; box-shadow:0 0 0 2px #fa721e; }\n  #d1-wrap .d1-btn-primary:hover { background:#e8630f; }\n  #d1-wrap .d1-btn-secondary { background:#fff; color:#0e2952; border:2px solid #0e2952; }\n  #d1-wrap .d1-btn-secondary:hover { background:#f8f4ec; }\n  #d1-wrap .d1-sugg { position:absolute; left:12px; right:12px; top:calc(100% + 4px); z-index:2000; background:#fff; border:2px solid #0e2952; border-radius:14px; box-shadow:0 6px 18px rgba(14,41,82,.18); margin:0; padding:6px 0; list-style:none; max-height:280px; overflow-y:auto; }\n  #d1-wrap .d1-sugg li { padding:9px 16px; cursor:pointer; font-size:15px; line-height:1.3; color:#0e2952; }\n  #d1-wrap .d1-sugg li small { display:block; color:#5b6b82; font-size:12.5px; }\n  #d1-wrap .d1-sugg li:hover, #d1-wrap .d1-sugg li.active { background:#f8f4ec; }\n  #d1-map .precinct-tip { background:#0e2952; color:#fff; border:0; border-radius:8px; padding:5px 10px; font-weight:600; box-shadow:0 2px 8px rgba(14,41,82,.3); }\n  #d1-map .precinct-tip::before { display:none; }\n  #d1-map .d1-legend { background:#fff; color:#0e2952; padding:10px 12px; border-radius:10px; border:2px solid #0e2952; line-height:1.7; font-size:13px; }\n  #d1-map .d1-legend .sw { display:inline-block; width:22px; height:13px; vertical-align:middle; margin-right:7px; border-radius:3px; box-sizing:border-box; }\n  #d1-map .leaflet-popup-content-wrapper { border-radius:12px; border:2px solid #0e2952; box-shadow:0 6px 18px rgba(14,41,82,.2); color:#0e2952; }\n  #d1-map .leaflet-popup-tip { background:#0e2952; }\n  #d1-map .leaflet-bar a { color:#0e2952; }\n  #d1-map .leaflet-tile-pane { filter: saturate(.45) contrast(.92); }\n  #d1-map .leaflet-control-attribution a { color:#0e2952; }\n  #d1-wrap .d1-cta, #d1-map .d1-cta { display:inline-block; margin-top:8px; padding:7px 14px; border-radius:999px; background:#fa721e; color:#fff !important; font-weight:600; font-size:13px; text-decoration:none !important; border:2px solid #fff; box-shadow:0 0 0 2px #fa721e; }\n  #d1-wrap .d1-cta:hover, #d1-map .d1-cta:hover { background:#e8630f; }\n  #d1-wrap .d1-tab { padding:9px 20px; border-radius:999px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; background:#fff; color:#0e2952; border:2px solid #0e2952; }\n  #d1-wrap .d1-tab.active { background:#0e2952; color:#fff; }\n  #d1-wrap .d1-sugg li .d1-badge { display:inline-block; font-size:11px; font-weight:700; padding:1px 8px; border-radius:999px; margin-left:6px; vertical-align:1px; }\n  #d1-wrap .d1-badge-active { background:#e7f5ec; color:#177245; }\n  #d1-wrap .d1-badge-susp { background:#fdeee3; color:#c2410c; }\n  #d1-wrap .d1-note { font-size:12.5px; color:#5b6b82; margin:6px 2px 0; }';
   document.head.appendChild(style);
 
-  var TAB_LABELS = { voter: "Voter lookup", address: "Address search", polling: "Polling places" };
-  var FORMS = {
-    voter: '<form id="d1-vform" style="display:none;margin:0 0 10px">\n    <div style="position:relative">\n      <input id="d1-vq" class="d1-input" type="text" placeholder="Type a name to check voter registration (e.g. Smith John)…" autocomplete="off" />\n      <ul id="d1-vsugg" class="d1-sugg" hidden></ul>\n    </div>\n    <div class="d1-note">Searches the public Travis County voter roll for District 1 residents.</div>\n  </form>',
-    address: '<form id="d1-search" style="display:none;gap:10px;flex-wrap:wrap;margin:0 0 10px">\n    <div style="flex:1 1 260px;min-width:0;position:relative">\n      <input id="d1-q" class="d1-input" type="text" placeholder="Start typing an Austin address…" autocomplete="off" />\n      <ul id="d1-sugg" class="d1-sugg" hidden></ul>\n    </div>\n    <button type="submit" class="d1-btn d1-btn-primary">Search</button>\n    <button type="button" id="d1-locate" class="d1-btn d1-btn-secondary">&#9673; Use my location</button>\n  </form>',
-    polling: '<form id="d1-pform" style="display:none;gap:10px;flex-wrap:wrap;margin:0 0 10px">\n    <div style="flex:1 1 260px;min-width:0;position:relative">\n      <input id="d1-pq" class="d1-input" type="text" placeholder="Your address — we&rsquo;ll find your closest place to vote…" autocomplete="off" />\n      <ul id="d1-psugg" class="d1-sugg" hidden></ul>\n    </div>\n    <button type="submit" class="d1-btn d1-btn-primary">Find</button>\n    <button type="button" id="d1-plocate" class="d1-btn d1-btn-secondary">&#9673; Use my location</button>\n  </form>'
+  // ---- language (English / Spanish) -----------------------------
+  // ?lang=es|en wins, then the visitor's saved choice, then the browser language.
+  // The choice is shared with the poll-greeting widget (same site, same storage).
+  var LANG = (function () {
+    var q = (new URLSearchParams(location.search).get("lang") || "").toLowerCase();
+    if (q === "es" || q === "en") return q;
+    try {
+      var saved = localStorage.getItem("d1-lang") || localStorage.getItem("pg-lang");
+      if (saved === "es" || saved === "en") return saved;
+    } catch (e) {}
+    return /^es\b/i.test(navigator.language || "") ? "es" : "en";
+  })();
+  var STR = {
+    en: {
+      langToggle: "Español", tab_voter: "Voter lookup", tab_address: "Address search", tab_polling: "Polling places",
+      vPlaceholder: "Type a name to check voter registration (e.g. Smith John)\u2026",
+      vNote: "Searches the public Travis County voter roll for District 1 residents.",
+      aPlaceholder: "Start typing an Austin address\u2026", search: "Search", useLoc: "\u25c9 Use my location",
+      pPlaceholder: "Your address \u2014 we\u2019ll find your closest place to vote\u2026", find: "Find",
+      mapLibFailed: "Map library failed to load.", mapDataFailed: "Map data failed to load.",
+      precinct: function (p) { return "Precinct " + p; },
+      tipCounts: function (t, a) { return t + " registered &middot; " + a + " active"; },
+      legD1: "District 1", legPct: "Voting precinct",
+      inD1: "&#10003; In District 1", notD1: "Not in District 1", yardSign: "Request a yard sign &rarr;",
+      searching: "Searching&hellip;", notFound: "Couldn't find that address. Try adding the street name or ZIP code.",
+      lookupFailed: "Address lookup failed. Please try again.", noGeo: "Your browser doesn't support location.",
+      gettingLoc: "Getting your location&hellip;", locDenied: "Location access was denied. You can type an address instead.",
+      locFailed: "Couldn't get your location.", yourLoc: "Your current location", youAreHere: "You are here",
+      loadingVoters: "Loading voter list&hellip;", votersFailed: "Couldn't load the voter list. Please try again.",
+      noVoters: "No matching District 1 voters found",
+      moreMatches: function (n) { return n + " matches \u2014 keep typing to narrow down"; },
+      addrConfidential: "Address confidential", active: "Active", suspense: "Suspense",
+      registeredIn: function (p) { return "Registered in Precinct " + p; },
+      confidentialNote: "This voter&rsquo;s address is confidential in the county&rsquo;s public records, so it can&rsquo;t be shown on the map.",
+      cantPlace: "(couldn&rsquo;t place on the map)", locating: "Locating&hellip;",
+      pollFailed: "Couldn't load polling locations. Please try again.",
+      earlyVoting: "Early voting", electionDay: "Election day", miAway: function (mi) { return mi + " mi away"; },
+      cardEv: "Closest early voting &middot; Oct 19&ndash;30", cardEd: "Closest on election day &middot; Tue Nov 3",
+      hoursEv: "7am&ndash;7pm daily", hoursEd: "7am&ndash;7pm", extHours: "open until 10pm Oct 29&ndash;30",
+      oct30Only: "Early voting here Oct 30 only", directions: "Directions &rarr;",
+      voteCenters: "Travis County uses vote centers &mdash; you can vote at <strong>any</strong> location in the county; these are just the closest to you."
+    },
+    es: {
+      langToggle: "English", tab_voter: "Buscar votante", tab_address: "Buscar dirección", tab_polling: "Lugares de votación",
+      vPlaceholder: "Escribe un nombre para verificar tu registro (p. ej., Smith John)\u2026",
+      vNote: "Busca en el padrón electoral público del condado de Travis a los residentes del Distrito 1.",
+      aPlaceholder: "Empieza a escribir una dirección de Austin\u2026", search: "Buscar", useLoc: "\u25c9 Usar mi ubicación",
+      pPlaceholder: "Tu dirección: te mostramos el lugar de votación más cercano\u2026", find: "Buscar",
+      mapLibFailed: "No se pudo cargar el mapa.", mapDataFailed: "No se pudieron cargar los datos del mapa.",
+      precinct: function (p) { return "Precinto " + p; },
+      tipCounts: function (t, a) { return t + " registrados &middot; " + a + " activos"; },
+      legD1: "Distrito 1", legPct: "Precinto electoral",
+      inD1: "&#10003; En el Distrito 1", notD1: "Fuera del Distrito 1", yardSign: "Pide un letrero para tu jardín &rarr;",
+      searching: "Buscando&hellip;", notFound: "No encontramos esa dirección. Intenta agregar el nombre de la calle o el código postal.",
+      lookupFailed: "La búsqueda de la dirección falló. Inténtalo de nuevo.", noGeo: "Tu navegador no permite compartir tu ubicación.",
+      gettingLoc: "Obteniendo tu ubicación&hellip;", locDenied: "No se permitió el acceso a tu ubicación. Puedes escribir una dirección.",
+      locFailed: "No se pudo obtener tu ubicación.", yourLoc: "Tu ubicación actual", youAreHere: "Estás aquí",
+      loadingVoters: "Cargando el padrón&hellip;", votersFailed: "No se pudo cargar el padrón. Inténtalo de nuevo.",
+      noVoters: "No se encontraron votantes del Distrito 1 con ese nombre",
+      moreMatches: function (n) { return n + " resultados: sigue escribiendo para acotar la búsqueda"; },
+      addrConfidential: "Dirección confidencial", active: "Activo", suspense: "En suspenso",
+      registeredIn: function (p) { return "Registrado en el precinto " + p; },
+      confidentialNote: "La dirección de este votante es confidencial en los registros públicos del condado, así que no se puede mostrar en el mapa.",
+      cantPlace: "(no se pudo ubicar en el mapa)", locating: "Ubicando&hellip;",
+      pollFailed: "No se pudieron cargar los lugares de votación. Inténtalo de nuevo.",
+      earlyVoting: "Votación anticipada", electionDay: "Día de las elecciones", miAway: function (mi) { return "a " + mi + " mi"; },
+      cardEv: "Votación anticipada más cercana &middot; 19&ndash;30 de oct.", cardEd: "Más cercano el Día de las elecciones &middot; mar. 3 de nov.",
+      hoursEv: "7 a.&nbsp;m.&ndash;7 p.&nbsp;m. todos los días", hoursEd: "7 a.&nbsp;m.&ndash;7 p.&nbsp;m.", extHours: "abierto hasta las 10 p.&nbsp;m. el 29 y 30 de oct.",
+      oct30Only: "Aquí la votación anticipada es solo el 30 de oct.", directions: "Cómo llegar &rarr;",
+      voteCenters: "El condado de Travis usa centros de votación: puedes votar en <strong>cualquier</strong> lugar del condado; estos son solo los más cercanos a ti."
+    }
   };
-  var tabBar = MODES.length > 1
-    ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px">' + MODES.map(function (m, i) {
-        return '<button type="button" class="d1-tab' + (i === 0 ? " active" : "") + '" data-tab="' + m + '">' + TAB_LABELS[m] + "</button>";
-      }).join("") + "</div>"
-    : "";
+  function T(k) { var v = STR[LANG][k]; return typeof v === "function" ? v.apply(null, Array.prototype.slice.call(arguments, 1)) : v; }
+  function num(n) { return n.toLocaleString(LANG === "es" ? "es-US" : "en-US"); }
+
+  var FORMS = {
+    voter: '<form id="d1-vform" style="display:none;margin:0 0 10px">\n    <div style="position:relative">\n      <input id="d1-vq" class="d1-input" type="text" autocomplete="off" />\n      <ul id="d1-vsugg" class="d1-sugg" hidden></ul>\n    </div>\n    <div class="d1-note" id="d1-vnote"></div>\n  </form>',
+    address: '<form id="d1-search" style="display:none;gap:10px;flex-wrap:wrap;margin:0 0 10px">\n    <div style="flex:1 1 260px;min-width:0;position:relative">\n      <input id="d1-q" class="d1-input" type="text" autocomplete="off" />\n      <ul id="d1-sugg" class="d1-sugg" hidden></ul>\n    </div>\n    <button type="submit" id="d1-asubmit" class="d1-btn d1-btn-primary"></button>\n    <button type="button" id="d1-locate" class="d1-btn d1-btn-secondary"></button>\n  </form>',
+    polling: '<form id="d1-pform" style="display:none;gap:10px;flex-wrap:wrap;margin:0 0 10px">\n    <div style="flex:1 1 260px;min-width:0;position:relative">\n      <input id="d1-pq" class="d1-input" type="text" autocomplete="off" />\n      <ul id="d1-psugg" class="d1-sugg" hidden></ul>\n    </div>\n    <button type="submit" id="d1-psubmit" class="d1-btn d1-btn-primary"></button>\n    <button type="button" id="d1-plocate" class="d1-btn d1-btn-secondary"></button>\n  </form>'
+  };
+  // Tab bar (only when there's more than one tool) + the language button, always.
+  var tabBar = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px">' +
+    (MODES.length > 1 ? MODES.map(function (m, i) {
+      return '<button type="button" class="d1-tab' + (i === 0 ? " active" : "") + '" data-tab="' + m + '"></button>';
+    }).join("") : "") +
+    '<button type="button" id="d1-lang" class="d1-tab" style="margin-left:auto"></button></div>';
   root.innerHTML = '<div id="d1-wrap" style="width:100%">\n  ' + tabBar + "\n  " +
     MODES.map(function (m) { return FORMS[m]; }).join("\n  ") +
     '\n  <div id="d1-result" style="min-height:24px;margin:0 0 10px;font-size:16px"></div>\n  <div id="d1-map" style="height:560px;width:100%;border-radius:16px;overflow:hidden;background:#f8f4ec;border:2px solid #0e2952"></div>\n</div>';
+
+  // Static text; re-run on every language switch. Things drawn later (legend,
+  // results, popups) register in onLang to redraw themselves.
+  var onLang = [];
+  function renderChrome() {
+    root.setAttribute("lang", LANG);
+    function set(id, prop, key) { var el = document.getElementById(id); if (el) el[prop] = T(key); }
+    Array.prototype.forEach.call(root.querySelectorAll(".d1-tab[data-tab]"), function (b) { b.textContent = T("tab_" + b.getAttribute("data-tab")); });
+    set("d1-vq", "placeholder", "vPlaceholder"); set("d1-vnote", "textContent", "vNote");
+    set("d1-q", "placeholder", "aPlaceholder"); set("d1-asubmit", "textContent", "search"); set("d1-locate", "textContent", "useLoc");
+    set("d1-pq", "placeholder", "pPlaceholder"); set("d1-psubmit", "textContent", "find"); set("d1-plocate", "textContent", "useLoc");
+    var lb = document.getElementById("d1-lang");
+    lb.textContent = T("langToggle"); lb.setAttribute("lang", LANG === "es" ? "en" : "es");
+  }
+  renderChrome();
+  document.getElementById("d1-lang").addEventListener("click", function () {
+    LANG = LANG === "es" ? "en" : "es";
+    try { localStorage.setItem("d1-lang", LANG); localStorage.setItem("pg-lang", LANG); } catch (e) {}
+    renderChrome();
+    onLang.forEach(function (f) { f(); });
+  });
 
   // ---- load Leaflet (once), then boot ---------------------------
   function loadLeaflet(cb) {
@@ -59,7 +155,7 @@
     if (window.L && L.geoJSON) return cb();
     var s = document.createElement("script"); s.src = LEAFLET_JS.src; s.integrity = LEAFLET_JS.integrity;
     s.crossOrigin = ""; s.onload = cb;
-    s.onerror = function () { document.getElementById("d1-map").innerHTML = '<p style="padding:1em;color:#b91c1c">Map library failed to load.</p>'; };
+    s.onerror = function () { document.getElementById("d1-map").innerHTML = '<p style="padding:1em;color:#b91c1c">' + T("mapLibFailed") + "</p>"; };
     document.head.appendChild(s);
   }
 
@@ -95,9 +191,10 @@ function start(DATA_BASE) {
       style: { color: NAVY, weight: 1.2, opacity: 0.55, fillColor: NAVY, fillOpacity: 0 },
       onEachFeature: function (f, layer) {
         var vc = voterCounts[String(f.properties.p)];
-        layer.bindTooltip("Precinct " + f.properties.p +
-          (vc ? '<br><span style="font-weight:400">' + vc.total.toLocaleString() + " registered &middot; " + vc.active.toLocaleString() + " active</span>" : ""),
-          { sticky: true, className: "precinct-tip", direction: "top" });
+        layer.bindTooltip(function () {   // a function, so it follows the current language
+          return T("precinct", f.properties.p) +
+            (vc ? '<br><span style="font-weight:400">' + T("tipCounts", num(vc.total), num(vc.active)) + "</span>" : "");
+        }, { sticky: true, className: "precinct-tip", direction: "top" });
         layer.on({
           mouseover: function (e) { e.target.setStyle({ fillColor: ORANGE, fillOpacity: 0.45, color: ORANGE, weight: 2.5, opacity: 1 }); e.target.bringToFront(); },
           mouseout: function (e) { precinctLayer.resetStyle(e.target); }
@@ -117,16 +214,19 @@ function start(DATA_BASE) {
     var legend = L.control({ position: "bottomleft" });
     legend.onAdd = function () {
       var d = L.DomUtil.create("div", "d1-legend");
-      d.innerHTML =
-        '<div><span class="sw" style="border:2px solid ' + NAVY + ';background:rgba(14,41,82,.28)"></span><strong>District 1</strong></div>' +
-        '<div><span class="sw" style="border:1px solid ' + NAVY + ';opacity:.7"></span>Voting precinct</div>';
+      function draw() {
+        d.innerHTML =
+          '<div><span class="sw" style="border:2px solid ' + NAVY + ';background:rgba(14,41,82,.28)"></span><strong>' + T("legD1") + "</strong></div>" +
+          '<div><span class="sw" style="border:1px solid ' + NAVY + ';opacity:.7"></span>' + T("legPct") + "</div>";
+      }
+      draw(); onLang.push(draw);
       return d;
     };
     legend.addTo(map);
     enableLookup(precincts, outline);
   }).catch(function (err) {
     document.getElementById("d1-map").innerHTML =
-      '<p style="padding:1em;color:#b91c1c">Map data failed to load.</p>';
+      '<p style="padding:1em;color:#b91c1c">' + T("mapDataFailed") + "</p>";
     console.error("D1 map:", err);
   });
 
@@ -165,8 +265,17 @@ function start(DATA_BASE) {
     resultEl.innerHTML = html;
     resultEl.style.color = isErr ? "#c2410c" : "#0e2952";
   }
+  // Whatever is showing in the result area (and its popups) is drawn by a
+  // view function, so switching language can simply draw it again.
+  var currentView = null;
+  function view(fn) { currentView = fn; fn(); }
+  function say(key, isErr) { view(function () { setResult(T(key), isErr); }); }
+  function val(x) { return typeof x === "function" ? x() : x; }
+  onLang.push(function () { if (currentView) currentView(); });
 
   function enableLookup(precincts, outline) {
+    // label / info: text, or a function returning text (for language-dependent
+    // labels like "Your current location", which aren't an address).
     function showPoint(lat, lng, label, info) {
       var pt = [lng, lat];
       var inD1 = inFeature(pt, outline.features[0]);
@@ -175,23 +284,29 @@ function start(DATA_BASE) {
         if (inFeature(pt, precincts.features[i])) { pct = precincts.features[i].properties.p; break; }
       }
       if (marker) map.removeLayer(marker);
-      marker = L.circleMarker([lat, lng], { radius: 9, color: "#fff", weight: 3, fillColor: ORANGE, fillOpacity: 1 }).addTo(map);
-      var msg = inD1
-        ? '<strong style="color:#fa721e">&#10003; In District 1</strong>' + (pct != null ? ' <span style="color:#0e2952">&middot; Precinct ' + pct + "</span>" : "")
-        : '<strong style="color:#0e2952">Not in District 1</strong>';
-      if (info) msg = info + "<br>" + msg;
-      if (label) msg += '<div style="font-size:13px;color:#5b6b82">' + label + "</div>";
-      if (inD1 && label) {
+      var m = marker = L.circleMarker([lat, lng], { radius: 9, color: "#fff", weight: 3, fillColor: ORANGE, fillOpacity: 1 }).addTo(map);
+      var yardHref = YARD_SIGN_URL;
+      if (typeof label === "string" && label) {      // prefill the yard-sign form only from a real address
         var parts = label.split(",").map(function (t) { return t.trim(); });
         var q = new URLSearchParams();
         if (parts[0]) q.set("street", parts[0]);
         if (parts[1] && !/^\d{5}/.test(parts[1])) q.set("city", parts[1]);
         var st = parts.find(function (t) { return /^[A-Z]{2}$/i.test(t); }); if (st) q.set("state", st.toUpperCase());
         var zip = parts.find(function (t) { return /^\d{5}(-\d{4})?$/.test(t); }); if (zip) q.set("zip", zip);
-        msg += '<a class="d1-cta" href="' + YARD_SIGN_URL + "?" + q.toString() + '">Request a yard sign &rarr;</a>';
+        yardHref += "?" + q.toString();
       }
-      marker.bindPopup(msg).openPopup();
-      setResult(msg);
+      view(function () {
+        var msg = inD1
+          ? '<strong style="color:#fa721e">' + T("inD1") + "</strong>" + (pct != null ? ' <span style="color:#0e2952">&middot; ' + T("precinct", pct) + "</span>" : "")
+          : '<strong style="color:#0e2952">' + T("notD1") + "</strong>";
+        var lbl = val(label);
+        if (info) msg = val(info) + "<br>" + msg;
+        if (lbl) msg += '<div style="font-size:13px;color:#5b6b82">' + lbl + "</div>";
+        if (inD1 && lbl) msg += '<a class="d1-cta" href="' + yardHref + '">' + T("yardSign") + "</a>";
+        if (m.getPopup()) m.setPopupContent(msg); else m.bindPopup(msg);
+        setResult(msg);
+      });
+      m.openPopup();
       map.flyTo([lat, lng], Math.max(map.getZoom(), 13.5));
     }
 
@@ -240,12 +355,12 @@ function start(DATA_BASE) {
       Array.prototype.forEach.call(suggEl.children, function (li, k) { li.classList.toggle("active", k === i); });
     }
     function locate(text, magicKey) {
-      setResult("Searching&hellip;");
+      say("searching");
       geocode(text, magicKey).then(function (c) {
-        if (!c) { setResult("Couldn't find that address. Try adding the street name or ZIP code.", true); return; }
+        if (!c) { say("notFound", true); return; }
         input.value = titleCase(c.address);
         showPoint(c.location.y, c.location.x, titleCase(c.address));
-      }).catch(function () { setResult("Address lookup failed. Please try again.", true); });
+      }).catch(function () { say("lookupFailed", true); });
     }
     function choose(i) {
       var sg = suggestions[i]; if (!sg) return;
@@ -287,12 +402,12 @@ function start(DATA_BASE) {
     });
 
     locateBtn.addEventListener("click", function () {
-      if (!navigator.geolocation) { setResult("Your browser doesn't support location.", true); return; }
-      setResult("Getting your location&hellip;");
+      if (!navigator.geolocation) { say("noGeo", true); return; }
+      say("gettingLoc");
       navigator.geolocation.getCurrentPosition(
-        function (pos) { showPoint(pos.coords.latitude, pos.coords.longitude, "Your current location"); },
+        function (pos) { showPoint(pos.coords.latitude, pos.coords.longitude, function () { return T("yourLoc"); }); },
         function (err) {
-          setResult(err.code === 1 ? "Location access was denied. You can type an address instead." : "Couldn't get your location.", true);
+          say(err.code === 1 ? "locDenied" : "locFailed", true);
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
@@ -306,7 +421,7 @@ function start(DATA_BASE) {
         pform = document.getElementById("d1-pform"),
         pinput = document.getElementById("d1-pq"),
         psuggEl = document.getElementById("d1-psugg"),
-        tabBtns = document.querySelectorAll("#d1-wrap .d1-tab");
+        tabBtns = document.querySelectorAll("#d1-wrap .d1-tab[data-tab]");
     var tabForms = { voter: vform, address: form, polling: pform };
     var tabInputs = { voter: vinput, address: input, polling: pinput };
     function showTab(m, focus) {
@@ -314,7 +429,7 @@ function start(DATA_BASE) {
         if (tabForms[k]) tabForms[k].style.display = (k === m) ? (k === "voter" ? "block" : "flex") : "none";
       });
       Array.prototype.forEach.call(tabBtns, function (b) { b.classList.toggle("active", b.getAttribute("data-tab") === m); });
-      setResult("");
+      currentView = null; setResult("");
       if (focus && tabInputs[m]) tabInputs[m].focus();
     }
     Array.prototype.forEach.call(tabBtns, function (btn) {
@@ -328,11 +443,11 @@ function start(DATA_BASE) {
 
     function loadVoters() {
       if (voterLoading) return voterLoading;
-      setResult("Loading voter list&hellip;");
+      say("loadingVoters");
       voterLoading = fetch(base("d1-voter-index.json"))
         .then(function (r) { return r.json(); })
-        .then(function (v) { voterIndex = v; setResult(""); return v; })
-        .catch(function () { voterLoading = null; setResult("Couldn't load the voter list. Please try again.", true); return []; });
+        .then(function (v) { voterIndex = v; currentView = null; setResult(""); return v; })
+        .catch(function () { voterLoading = null; say("votersFailed", true); return []; });
       return voterLoading;
     }
     function searchVoters(q) {
@@ -350,22 +465,22 @@ function start(DATA_BASE) {
     function renderVoters(list) {
       vMatches = list; vActive = -1; vsuggEl.innerHTML = "";
       if (!list.length) {
-        vsuggEl.innerHTML = '<li style="cursor:default;color:#5b6b82">No matching District 1 voters found</li>';
+        vsuggEl.innerHTML = '<li style="cursor:default;color:#5b6b82">' + T("noVoters") + "</li>";
         vsuggEl.hidden = false; return;
       }
       list.slice(0, V_SHOW).forEach(function (v, i) {
         var li = document.createElement("li");
-        var addr = v[3].indexOf("***") !== -1 ? "<em>Address confidential</em>" : titleCase(v[3]);
+        var addr = v[3].indexOf("***") !== -1 ? "<em>" + T("addrConfidential") + "</em>" : titleCase(v[3]);
         li.innerHTML = titleCase(v[0]) +
-          '<span class="d1-badge ' + (v[2] ? 'd1-badge-active">Active' : 'd1-badge-susp">Suspense') + "</span>" +
-          "<small>" + addr + " &middot; Precinct " + v[1] + "</small>";
+          '<span class="d1-badge ' + (v[2] ? 'd1-badge-active">' + T("active") : 'd1-badge-susp">' + T("suspense")) + "</span>" +
+          "<small>" + addr + " &middot; " + T("precinct", v[1]) + "</small>";
         li.addEventListener("mousedown", function (e) { e.preventDefault(); chooseVoter(i); });
         vsuggEl.appendChild(li);
       });
       if (list.length > V_SHOW) {
         var more = document.createElement("li");
         more.style.cursor = "default"; more.style.color = "#5b6b82";
-        more.textContent = (list.length >= V_CAP ? V_CAP + "+" : list.length) + " matches — keep typing to narrow down";
+        more.textContent = T("moreMatches", list.length >= V_CAP ? V_CAP + "+" : list.length);
         vsuggEl.appendChild(more);
       }
       vsuggEl.hidden = false;
@@ -374,18 +489,20 @@ function start(DATA_BASE) {
       var v = vMatches[i]; if (!v) return;
       hideVsugg();
       vinput.value = titleCase(v[0]);
-      var info = "<strong>" + titleCase(v[0]) + "</strong> " +
-        '<span style="font-weight:600;color:' + (v[2] ? '#177245">Active' : '#c2410c">Suspense') + "</span>" +
-        ' <span style="color:#0e2952">&middot; Registered in Precinct ' + v[1] + "</span>";
+      function info() {
+        return "<strong>" + titleCase(v[0]) + "</strong> " +
+          '<span style="font-weight:600;color:' + (v[2] ? '#177245">' + T("active") : '#c2410c">' + T("suspense")) + "</span>" +
+          ' <span style="color:#0e2952">&middot; ' + T("registeredIn", v[1]) + "</span>";
+      }
       if (v[3].indexOf("***") !== -1) {   // county-redacted (address confidentiality program)
-        setResult(info + '<div style="font-size:13px;color:#5b6b82">This voter&rsquo;s address is confidential in the county&rsquo;s public records, so it can&rsquo;t be shown on the map.</div>');
+        view(function () { setResult(info() + '<div style="font-size:13px;color:#5b6b82">' + T("confidentialNote") + "</div>"); });
         return;
       }
-      setResult("Locating&hellip;");
+      say("locating");
       geocode(v[3], null).then(function (c) {
         if (c) showPoint(c.location.y, c.location.x, titleCase(c.address), info);
-        else setResult(info + '<div style="font-size:13px;color:#5b6b82">' + titleCase(v[3]) + " (couldn&rsquo;t place on the map)</div>");
-      }).catch(function () { setResult(info); });
+        else view(function () { setResult(info() + '<div style="font-size:13px;color:#5b6b82">' + titleCase(v[3]) + " " + T("cantPlace") + "</div>"); });
+      }).catch(function () { view(function () { setResult(info()); }); });
     }
 
     if (vform) {
@@ -423,7 +540,7 @@ function start(DATA_BASE) {
       pollLoading = fetch(base("d1-polling.json"))
         .then(function (r) { return r.json(); })
         .then(function (d) { pollData = d; return d; })
-        .catch(function () { pollLoading = null; setResult("Couldn't load polling locations. Please try again.", true); return null; });
+        .catch(function () { pollLoading = null; say("pollFailed", true); return null; });
       return pollLoading;
     }
     function milesBetween(aLat, aLng, bLat, bLng) {
@@ -446,16 +563,18 @@ function start(DATA_BASE) {
       return "https://www.google.com/maps/dir/?api=1&origin=" + fromLat + "," + fromLng +
         "&destination=" + encodeURIComponent(site.a) + "&travelmode=driving";
     }
+    function miles(mi) { return mi.toFixed(1); }
+    function siteNote(n) { return n === STR.en.oct30Only ? T("oct30Only") : n; }   // the one note in the data
     function siteCard(title, hours, hit, fromLat, fromLng) {
       var s = hit.site;
       return '<div style="flex:1 1 240px;border:2px solid #0e2952;border-radius:14px;padding:12px 14px;background:#fff">' +
         '<div style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#fa721e">' + title + "</div>" +
         '<div style="font-weight:700;margin:2px 0">' + s.n + "</div>" +
         '<div style="font-size:13px;color:#5b6b82">' + (s.r ? s.r + " &middot; " : "") + s.a + "</div>" +
-        '<div style="font-size:13px;margin-top:4px">' + hit.mi.toFixed(1) + " mi away &middot; " + hours +
-        (s.ext ? " &middot; open until 10pm Oct 29&ndash;30" : "") +
-        (s.note ? "<br><em>" + s.note + "</em>" : "") + "</div>" +
-        '<a class="d1-cta" href="' + dirLink(fromLat, fromLng, s) + '" target="_blank" rel="noopener">Directions &rarr;</a></div>';
+        '<div style="font-size:13px;margin-top:4px">' + T("miAway", miles(hit.mi)) + " &middot; " + hours +
+        (s.ext ? " &middot; " + T("extHours") : "") +
+        (s.note ? "<br><em>" + siteNote(s.note) + "</em>" : "") + "</div>" +
+        '<a class="d1-cta" href="' + dirLink(fromLat, fromLng, s) + '" target="_blank" rel="noopener">' + T("directions") + "</a></div>";
     }
     function showPolling(lat, lng, label) {
       loadPolling().then(function (d) {
@@ -464,23 +583,30 @@ function start(DATA_BASE) {
         pollMarkers.forEach(function (m) { map.removeLayer(m); });
         pollMarkers = [];
         if (marker) map.removeLayer(marker);
-        marker = L.circleMarker([lat, lng], { radius: 9, color: "#fff", weight: 3, fillColor: ORANGE, fillOpacity: 1 })
-          .addTo(map).bindPopup(label || "You are here");
-        var pts = [[lat, lng]];
-        [{ hit: ev, t: "Early voting" }, { hit: ed, t: "Election day" }].forEach(function (x) {
+        var here = marker = L.circleMarker([lat, lng], { radius: 9, color: "#fff", weight: 3, fillColor: ORANGE, fillOpacity: 1 })
+          .addTo(map).bindPopup("");
+        var pts = [[lat, lng]], sites = [];
+        [{ hit: ev, t: "earlyVoting" }, { hit: ed, t: "electionDay" }].forEach(function (x) {
           if (!x.hit) return;
           var s = x.hit.site;
           var m = L.circleMarker([s.lat, s.lng], { radius: 8, color: "#fff", weight: 3, fillColor: NAVY, fillOpacity: 1 })
-            .addTo(map).bindPopup("<strong>" + s.n + "</strong><br>" + x.t + " &middot; " + x.hit.mi.toFixed(1) + " mi<br>" + s.a +
-              '<br><a class="d1-cta" href="' + dirLink(lat, lng, s) + '" target="_blank" rel="noopener">Directions &rarr;</a>');
+            .addTo(map).bindPopup("");
           pollMarkers.push(m);
+          sites.push({ m: m, x: x });
           pts.push([s.lat, s.lng]);
         });
-        var html = '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
-          (ev ? siteCard("Closest early voting &middot; Oct 19&ndash;30", "7am&ndash;7pm daily", ev, lat, lng) : "") +
-          (ed ? siteCard("Closest on election day &middot; Tue Nov 3", "7am&ndash;7pm", ed, lat, lng) : "") + "</div>" +
-          '<div class="d1-note">Travis County uses vote centers &mdash; you can vote at <strong>any</strong> location in the county; these are just the closest to you.</div>';
-        setResult(html);
+        view(function () {
+          here.setPopupContent(val(label) || T("youAreHere"));
+          sites.forEach(function (p) {
+            var s = p.x.hit.site;
+            p.m.setPopupContent("<strong>" + s.n + "</strong><br>" + T(p.x.t) + " &middot; " + miles(p.x.hit.mi) + " mi<br>" + s.a +
+              '<br><a class="d1-cta" href="' + dirLink(lat, lng, s) + '" target="_blank" rel="noopener">' + T("directions") + "</a>");
+          });
+          setResult('<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+            (ev ? siteCard(T("cardEv"), T("hoursEv"), ev, lat, lng) : "") +
+            (ed ? siteCard(T("cardEd"), T("hoursEd"), ed, lat, lng) : "") + "</div>" +
+            '<div class="d1-note">' + T("voteCenters") + "</div>");
+        });
         map.flyToBounds(L.latLngBounds(pts).pad(0.3), { maxZoom: 15 });
       });
     }
@@ -498,13 +624,13 @@ function start(DATA_BASE) {
       psuggEl.hidden = false;
     }
     function pLocate(text, magicKey) {
-      setResult("Searching&hellip;");
+      say("searching");
       loadPolling();                                  // start the data fetch in parallel
       geocode(text, magicKey).then(function (c) {
-        if (!c) { setResult("Couldn't find that address. Try adding the street name or ZIP code.", true); return; }
+        if (!c) { say("notFound", true); return; }
         pinput.value = titleCase(c.address);
         showPolling(c.location.y, c.location.x, titleCase(c.address));
-      }).catch(function () { setResult("Address lookup failed. Please try again.", true); });
+      }).catch(function () { say("lookupFailed", true); });
     }
     function pChoose(i) {
       var sg = pSuggs[i]; if (!sg) return;
@@ -540,13 +666,13 @@ function start(DATA_BASE) {
       pLocate(q, null);
     });
     document.getElementById("d1-plocate").addEventListener("click", function () {
-      if (!navigator.geolocation) { setResult("Your browser doesn't support location.", true); return; }
-      setResult("Getting your location&hellip;");
+      if (!navigator.geolocation) { say("noGeo", true); return; }
+      say("gettingLoc");
       loadPolling();
       navigator.geolocation.getCurrentPosition(
-        function (pos) { showPolling(pos.coords.latitude, pos.coords.longitude, "Your current location"); },
+        function (pos) { showPolling(pos.coords.latitude, pos.coords.longitude, function () { return T("yourLoc"); }); },
         function (err) {
-          setResult(err.code === 1 ? "Location access was denied. You can type an address instead." : "Couldn't get your location.", true);
+          say(err.code === 1 ? "locDenied" : "locFailed", true);
         },
         { enableHighAccuracy: true, timeout: 10000 }
       );
