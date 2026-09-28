@@ -166,19 +166,18 @@ Options (`data-*` on `#pg-root`):
 5. Set the spreadsheet's sharing back to **Restricted**. The form keeps writing
    to it; the widget keeps reading counts through the script.
 
-**Keep it fast (run once, after pasting a new `Code.gs`):** pick `setup` in the
-function dropdown and click **Run**. It adds a 1-minute trigger that precomputes
-the answer, so requests never wait on reading the sheet.
+**After pasting a new `Code.gs`:** pick `setup` in the function dropdown and
+click **Run** (adds a 1-minute trigger that keeps the script warm), then
+publish a new version (below).
 
-**Speed.** Apps Script web apps typically answer in 1–5 s with occasional
-30 s+ spikes, so the widget never waits on it: pins draw immediately (showing
-`·`), counts fill in when they arrive, and each browser remembers the last
-counts (localStorage) so repeat visits show numbers instantly. For first-time
-visitors, add a fast snapshot: in the sheet add a tab `counts` with
-`=FILTER(Sheet1!H:H, ISNUMBER(SEARCH("PG|v1|", Sheet1!H:H)))`, then
-*File → Share → Publish to web → counts → CSV*, and put that URL in
-`SNAPSHOT_URL` in `pg-widget.js`. Google serves it in ~0.2 s (≤5 min stale);
-the widget shows it first, then swaps in the live numbers.
+**Freshness vs. speed.** Every request re-reads the sheet unless another did
+in the last 5 s, so new sign-ups appear right away. Apps Script itself is the
+slow part (typically 1–5 s, occasionally 30–50 s), so the widget never waits
+on it: the page renders immediately with the last counts this browser saw
+(localStorage), and a status bar says "Loading the latest sign-ups… 12s" with
+the time of the saved counts, then turns green ("Up to date · as of 2:15 PM").
+First-time visitors see `·` on pins until counts arrive; everything else works.
+While the page is open it re-checks quietly every minute.
 
 To change the script later: edit, then **Deploy → Manage deployments → edit
 (pencil) → Version: New version → Deploy**. That keeps the same URL. A *new

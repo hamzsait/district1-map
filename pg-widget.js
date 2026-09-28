@@ -18,9 +18,6 @@
  *   data-api       Apps Script web-app URL            (default: API_URL below)
  *   data-sheet     Google Sheet id                    (default: campaign sheet)
  *   data-gid       tab id within the sheet            (default: 0)
- *   data-snapshot  "Publish to web" CSV of a tab holding only the PG|v1| column
- *                  (default: SNAPSHOT_URL below). Served fast by Google, ~5 min
- *                  behind — shown first, then replaced by the live data-api answer.
  *   data-csv       "Publish to web" CSV URL — use instead of data-sheet if the
  *                  sheet itself is private (recommended; see README)
  *   data-form      form page URL                      (default: /data-feed)
@@ -51,12 +48,8 @@
   // Apps Script web-app URL (Deploy → Manage deployments → Web app URL).
   var API_URL = "https://script.google.com/macros/s/AKfycbxsjoJFc-eQWUfFJ1CmlVppWCkkmSf2iAx0wz-gWagcSzaA1YeVs_CQxnzxUx22loAc/exec";
 
-  // Optional fast snapshot: File → Share → Publish to web → the "counts" tab → CSV.
-  var SNAPSHOT_URL = "";
-
   var CFG = {
     api:    opt("api", API_URL),
-    snap:   opt("snapshot", SNAPSHOT_URL),
     sheet:  opt("sheet", "14iAFtDRyREOr9N1LoYHdSxIJyP7d_rEBuTwzK_tOKEU"),
     gid:    opt("gid", "0"),
     csv:    opt("csv", ""),
@@ -141,6 +134,13 @@
     '#pg-wrap .pg-msg.ok { background:#e7f5ec; color:#177245; }',
     '#pg-wrap .pg-picked { margin-top:10px; font-size:13.5px; background:#f8f4ec; border-radius:12px; padding:8px 12px; }',
     '#pg-wrap .pg-spin { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.5); border-top-color:#fff; border-radius:50%; animation:pgspin .8s linear infinite; vertical-align:-2px; margin-right:8px; }',
+    '#pg-wrap .pg-live { display:flex; gap:10px; align-items:flex-start; padding:10px 14px; margin:0 0 10px; border-radius:12px; border:2px solid #0e2952; background:#f8f4ec; color:#0e2952; font-size:14px; line-height:1.35; }',
+    '#pg-wrap .pg-live.ok { padding:6px 12px; font-size:13px; background:#e7f5ec; color:#177245; border-color:#b7e0c6; }',
+    '#pg-wrap .pg-live.err { background:#fdeee3; color:#c2410c; border-color:#f6c8a8; }',
+    '#pg-wrap .pg-live-sub { font-size:12.5px; color:#5b6b82; margin-top:2px; }',
+    '#pg-wrap .pg-live-secs { color:#5b6b82; font-variant-numeric:tabular-nums; }',
+    '#pg-wrap .pg-live-dot { flex:none; width:9px; height:9px; margin-top:4px; border-radius:50%; background:#1f9d57; }',
+    '#pg-wrap .pg-spin-dark { flex:none; margin:2px 0 0; border-color:rgba(14,41,82,.25); border-top-color:#0e2952; }',
     '@keyframes pgspin { to { transform:rotate(360deg); } }',
     '@media (max-width:520px) { #pg-wrap .pg-grid2 { grid-template-columns:1fr; } }'
   ].join("\n");
@@ -151,8 +151,8 @@
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 10px">' +
         '<label for="pg-day" style="font-weight:600">Show sign-ups for</label>' +
         '<select id="pg-day" class="pg-select" style="width:auto;flex:0 1 240px;padding:8px 12px"></select>' +
-        '<span id="pg-status" class="pg-muted"></span>' +
       '</div>' +
+      '<div id="pg-live" class="pg-live loading" role="status" aria-live="polite"></div>' +
       '<div class="pg-row">' +
         '<div class="pg-mapbox"><div id="pg-map" style="height:560px;width:100%;border-radius:16px;overflow:hidden;background:#f8f4ec;border:2px solid #0e2952"></div></div>' +
         '<div class="pg-panel" id="pg-panel"></div>' +
@@ -267,11 +267,6 @@
   }
 
   // ---- read sign-ups from the Google Sheet -----------------------
-  function csvRows(url) {
-    return fetch(url + (url.indexOf("?") === -1 ? "?" : "&") + "_=" + Date.now())
-      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
-      .then(parseCsv);
-  }
   function sheetRows() {
     if (CFG.api) {         // one "row" per PG|v1| key — same shape the parser expects
       var ctl = window.AbortController ? new AbortController() : null;
@@ -413,8 +408,7 @@
     }).addTo(map);
     setTimeout(function () { map.invalidateSize(); }, 300);
 
-    var panel = document.getElementById("pg-panel"), daySel = document.getElementById("pg-day"),
-        statusEl = document.getElementById("pg-status");
+    var panel = document.getElementById("pg-panel"), daySel = document.getElementById("pg-day");
     var sites = [], byName = {}, counts = {}, markers = {};
     var state = { site: null, day: null, picked: {}, filterDay: "", form: { fname: "", lname: "", email: "", phone: "", notes: "" } };
 
@@ -430,9 +424,12 @@
       return n;
     }
 
-    // ---- sign-up counts: shown from this browser's last copy right away,
-    // then replaced when the (slow) sheet endpoint answers. Pins never wait.
-    var CACHE_KEY = "pg-keys-v1", countsKnown = false, serverKeys = [], localKeys = [];
+    // ---- sign-up counts --------------------------------------------
+    // The page renders right away with the last counts this browser saw
+    // (localStorage), and a status bar makes it clear the latest numbers are
+    // still loading — the Apps Script endpoint can take 1–50 s. Pins and the
+    // sign-up form work the whole time.
+    var CACHE_KEY = "pg-keys-v1", countsKnown = false, serverKeys = [], localKeys = [], savedAt = 0, liveAt = 0;
     function keysOf(rows) {
       var out = [];
       rows.forEach(function (r) { for (var i = 0; i < r.length; i++) if (decodeKey(r[i])) { out.push(r[i].slice(r[i].indexOf("PG|v1|")).trim()); break; } });
@@ -453,29 +450,68 @@
     }
     try {
       var cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
-      if (cached && cached.keys) { serverKeys = cached.keys; countsKnown = true; rebuildCounts(); }
+      if (cached && cached.keys) { serverKeys = cached.keys; savedAt = cached.at || 0; countsKnown = true; rebuildCounts(); }
     } catch (e) {}
-    statusEl.textContent = countsKnown ? "Updating sign-up counts…" : "Loading sign-up counts…";
 
-    function loadCounts(p, retry) {
+    // Status bar: loading (big, with elapsed seconds) → ok (small, green) / err.
+    var liveEl = document.getElementById("pg-live"),
+        live = { mode: "loading", started: Date.now(), busy: false, inflight: false, retried: false }, liveTick = null;
+    function whenText(ms) {
+      var d = new Date(ms), t = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      return new Date().toDateString() === d.toDateString() ? t : MON[d.getMonth()] + " " + d.getDate() + ", " + t;
+    }
+    function renderLive() {
+      var secs = Math.round((Date.now() - live.started) / 1000), h;
+      if (live.mode === "loading") {
+        h = '<span class="pg-spin pg-spin-dark"></span><div><strong>Loading the latest sign-ups\u2026</strong> <span class="pg-live-secs">' + secs + "s</span>" +
+            '<div class="pg-live-sub">' + (countsKnown && savedAt ? "Showing counts saved at " + whenText(savedAt) + " until it finishes. " : "") +
+            "This can take up to a minute \u2014 you can browse and sign up in the meantime.</div></div>";
+      } else if (live.mode === "ok") {
+        h = (live.busy ? '<span class="pg-spin pg-spin-dark"></span>' : '<span class="pg-live-dot"></span>') + "<div>" +
+            (live.busy ? "Checking for new sign-ups\u2026"
+                       : "<strong>Up to date</strong> &middot; sign-ups as of " + whenText(liveAt) + ' &nbsp;<a href="#" class="pg-link" data-live-refresh>Refresh</a>') + "</div>";
+      } else {
+        h = "<div><strong>Couldn\u2019t load the latest sign-ups.</strong> " +
+            (countsKnown && savedAt ? "Showing counts saved at " + whenText(savedAt) + ". " : "You can still sign up. ") +
+            '<a href="#" class="pg-link" data-live-refresh>Try again</a></div>';
+      }
+      liveEl.className = "pg-live " + live.mode;
+      liveEl.innerHTML = h;
+      var r = liveEl.querySelector("[data-live-refresh]");
+      if (r) r.addEventListener("click", function (e) { e.preventDefault(); fetchLatest(sheetRows(), live.mode === "err"); });
+    }
+    function fetchLatest(p, loud) {
+      if (live.inflight) return;
+      live.inflight = true;
+      if (loud || !liveAt) { live.mode = "loading"; live.started = Date.now(); } else live.busy = true;
+      clearInterval(liveTick);
+      liveTick = setInterval(function () { if (live.mode === "loading") renderLive(); }, 1000);
+      renderLive();
       p.then(function (rows) {
-        serverKeys = keysOf(rows); countsKnown = true; liveLoaded = true;
-        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ keys: serverKeys, at: Date.now() })); } catch (e) {}
-        rebuildCounts(); statusEl.textContent = ""; refreshViews();
-      }).catch(function (e) {
+        serverKeys = keysOf(rows); countsKnown = true; liveAt = savedAt = Date.now();
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ keys: serverKeys, at: savedAt })); } catch (e) {}
+        rebuildCounts(); refreshViews();
+        live.mode = "ok";
+      }, function (e) {
         console.error("poll-greet: counts", e);
-        if (retry) { setTimeout(function () { loadCounts(sheetRows(), false); }, 3000); return; }
-        statusEl.textContent = countsKnown ? "Showing recent sign-up counts." : "Couldn’t load sign-up counts — you can still sign up.";
-        if (!countsKnown) { countsKnown = true; refreshViews(); }
+        if (!liveAt && !live.retried) {                  // one quiet automatic retry on first load
+          live.retried = true; live.inflight = false;
+          setTimeout(function () { fetchLatest(sheetRows(), true); }, 2000);
+          return "retrying";
+        }
+        if (!liveAt) live.mode = "err";                  // a failed background check keeps the last good answer
+      }).then(function (r) {
+        if (r === "retrying") return;
+        live.inflight = false; live.busy = false;
+        clearInterval(liveTick); renderLive();
       });
     }
-    var liveLoaded = false;
-    if (EARLY.snap) EARLY.snap.then(function (rows) {      // fast, slightly stale — only until the live answer lands
-      if (liveLoaded) return;
-      serverKeys = keysOf(rows); countsKnown = true; rebuildCounts(); refreshViews();
-      statusEl.textContent = "Updating sign-up counts\u2026";
-    }).catch(function (e) { console.warn("poll-greet: snapshot", e); });
-    loadCounts(EARLY.counts, true);
+    fetchLatest(EARLY.counts, true);
+    // While the page is open, quietly pick up new sign-ups every minute.
+    setInterval(function () { if (!document.hidden && live.mode === "ok") fetchLatest(sheetRows(), false); }, 60000);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden && live.mode === "ok" && Date.now() - liveAt > 60000) fetchLatest(sheetRows(), false);
+    });
 
     Promise.all([EARLY.outline, EARLY.polling]).then(function (res) {
       var outline = res[0], d1 = outline.features[0];
@@ -673,10 +709,8 @@
   var EARLY = {
     outline: fetch(dataUrl("d1-outline.geojson")).then(function (r) { return r.json(); }),
     polling: fetch(dataUrl("d1-polling.json")).then(function (r) { return r.json(); }),
-    counts:  sheetRows(),
-    snap:    CFG.snap && CFG.api ? csvRows(CFG.snap) : null
+    counts:  sheetRows()
   };
-  EARLY.counts.catch(function () {});
-  if (EARLY.snap) EARLY.snap.catch(function () {});              // handled in start(); avoid unhandled-rejection noise
+  EARLY.counts.catch(function () {});              // handled in start(); avoid unhandled-rejection noise
   loadLeaflet(start);
 })();
