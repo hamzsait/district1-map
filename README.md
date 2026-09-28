@@ -90,3 +90,98 @@ python3 -m http.server 8080
 ```
 
 (`fetch()` needs an HTTP server — opening `index.html` directly from the file system won't load the GeoJSON.)
+
+## Poll-greeting sign-up (`/poll-greeting`)
+
+A second, separate widget: a map of polling places in and near District 1 where
+volunteers click a site, pick a day and one or more hour slots, enter their
+contact info, and sign up to poll greet. Each slot shows how many people have
+already signed up ("Needs greeters" / "2 signed up"), and each map pin shows the
+site's total.
+
+| File | What |
+|------|------|
+| `poll-greet.js` | Never-changing bootstrap for the Squarespace Code Block → loads `pg-widget.js` |
+| `pg-widget.js` | The widget (map, slot picker, form submission, sheet reader) |
+| `pg-form-autofill.js` | Fallback only: autofills + submits the `/data-feed` form from a `#pg=` link |
+| `poll-greet.html` | Standalone preview page |
+
+Embed on the `/poll-greeting` page:
+
+```html
+<div id="pg-root"></div>
+<script src="https://hamzsait.github.io/district1-map/poll-greet.js"></script>
+```
+
+**Backend — no server.** The Squarespace form at `/data-feed` (which feeds the
+Google Sheet) *is* the backend:
+
+- **Write:** on submit the widget loads `/data-feed` in a hidden iframe (same
+  origin, so it can reach into it), fills in the form and presses Submit, so
+  Squarespace's own code does the posting and appends the row to the sheet. The
+  volunteer never leaves the map. Takes ~3–5 s.
+- **Read:** a tiny Google Apps Script web app attached to the sheet
+  (`apps-script/Code.gs`) returns only the machine-readable `PG|v1|…` cells;
+  the widget counts sign-ups per slot from those. Runs as the sheet owner, so
+  the spreadsheet stays **private** — names/emails/phones never leave it.
+  Counts are live (cached ≤15 s).
+
+What lands in the four "Text" fields of the form (in form order):
+
+| Field | Example |
+|---|---|
+| 1 | `Shift: Sat Oct 24 8–10am, 1–2pm; Thu Oct 29 9–10pm` |
+| 2 | `Location: Millennium Youth Entertainment Complex (1156 Hargrave St, Austin TX 78702)` |
+| 3 | `Notes: bringing a friend` (blank if none) |
+| 4 | `PG\|v1\|Millennium Youth Entertainment Complex\|2026-10-24 08,09,13;2026-10-29 21` ← machine-readable, what the counts come from |
+
+Column order in the sheet doesn't matter — the reader scans every cell of a row
+for `PG|v1|`. Rows without it (like hand-entered ones) are ignored. **To cancel
+someone's sign-up, delete their row** (or clear its `PG|v1|` cell).
+
+Slots: hourly, 7am–7pm Oct 19–30 at early-voting sites (to 10pm Oct 29–30 at
+extended-hours sites), and 7am–7pm Nov 3 at every site. Past slots are disabled.
+
+Options (`data-*` on `#pg-root`):
+
+| Attribute | Default | |
+|---|---|---|
+| `data-target` | `2` | greeters wanted per slot (slot turns green at this) |
+| `data-buffer-mi` | `1` | also show sites within N miles of D1; `0` = only sites inside D1 |
+| `data-api` | `API_URL` in `pg-widget.js` | Apps Script web-app URL (the normal way to read counts) |
+| `data-csv` | — | "Publish to web" CSV URL of the sheet (see privacy note) |
+| `data-sheet` / `data-gid` | campaign sheet / `0` | read the sheet via Google's gviz endpoint instead |
+| `data-form` | `https://misaelforaustin.com/data-feed` | the form page |
+| `data-dry-run` | off | fill the form but don't press Submit (testing) |
+
+### Setting up the counts endpoint (one time)
+
+1. Open the sign-up sheet → **Extensions → Apps Script**.
+2. Replace the contents of `Code.gs` with `apps-script/Code.gs` from this repo. Save.
+3. **Deploy → New deployment** → gear icon → **Web app**. Execute as: **Me**.
+   Who has access: **Anyone**. Deploy, then click through Google's authorization
+   prompt (it asks to let the script read this spreadsheet).
+4. Copy the **Web app URL** (`https://script.google.com/macros/s/…/exec`) into
+   `API_URL` at the top of `pg-widget.js` and push.
+5. Set the spreadsheet's sharing back to **Restricted**. The form keeps writing
+   to it; the widget keeps reading counts through the script.
+
+To change the script later: edit, then **Deploy → Manage deployments → edit
+(pencil) → Version: New version → Deploy**. That keeps the same URL. A *new
+deployment* would create a new URL.
+
+Fallbacks, if you ever need them: `data-csv` ("Publish to web" CSV of a tab
+holding only the `PG|v1|` column; Google refreshes it about every 5 minutes) or
+`data-sheet` (gviz, which requires the whole sheet to be link-viewable).
+
+**If the form changes.** Field ids are at the top of `pg-widget.js` (`FIELD`);
+if they don't match, it falls back to "the Nth text field". Keep the form's
+four Text fields in the same order. The form's post-submit redirect to
+`/poll-greeting` is fine (the widget treats it as success and doesn't boot
+inside the iframe).
+
+**Fallback.** When the widget runs somewhere other than misaelforaustin.com
+(e.g. the GitHub Pages preview) it can't reach into the form, so it sends the
+volunteer to `/data-feed#pg=…` instead. For that to auto-submit, add
+`<script src="https://hamzsait.github.io/district1-map/pg-form-autofill.js"></script>`
+in a Code Block on the `/data-feed` page. Not needed for the normal embed.
