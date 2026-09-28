@@ -141,6 +141,8 @@
     '#pg-wrap .pg-live-secs { color:#5b6b82; font-variant-numeric:tabular-nums; }',
     '#pg-wrap .pg-live-dot { flex:none; width:9px; height:9px; margin-top:4px; border-radius:50%; background:#1f9d57; }',
     '#pg-wrap .pg-spin-dark { flex:none; margin:2px 0 0; border-color:rgba(14,41,82,.25); border-top-color:#0e2952; }',
+    '#pg-wrap .pg-cal { display:inline-block; padding:6px 12px; border-radius:999px; border:2px solid #177245; background:#fff; color:#177245 !important; font-size:13px; font-weight:600; text-decoration:none !important; }',
+    '#pg-wrap .pg-cal:hover { background:#f3fbf6; }',
     '@keyframes pgspin { to { transform:rotate(360deg); } }',
     '@media (max-width:520px) { #pg-wrap .pg-grid2 { grid-template-columns:1fr; } }'
   ].join("\n");
@@ -149,8 +151,9 @@
   root.innerHTML =
     '<div id="pg-wrap">' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 10px">' +
-        '<label for="pg-day" style="font-weight:600">Show sign-ups for</label>' +
+        '<label for="pg-day" id="pg-day-label" style="font-weight:600"></label>' +
         '<select id="pg-day" class="pg-select" style="width:auto;flex:0 1 240px;padding:8px 12px"></select>' +
+        '<button type="button" id="pg-lang" class="pg-chip" style="margin-left:auto !important;padding:7px 14px !important" lang=""></button>' +
       '</div>' +
       '<div id="pg-live" class="pg-live loading" role="status" aria-live="polite"></div>' +
       '<div class="pg-row">' +
@@ -173,10 +176,89 @@
 
   // ---- small helpers -------------------------------------------
   var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  var DOW_ES = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"], MON_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+  // ---- language (English / Spanish) -----------------------------
+  // ?lang=es|en wins, then the visitor's saved choice, then the browser language.
+  // What's written to the sheet always stays English for organizers.
+  var LANG = (function () {
+    var q = (new URLSearchParams(location.search).get("lang") || "").toLowerCase();
+    if (q === "es" || q === "en") return q;
+    try { var saved = localStorage.getItem("pg-lang"); if (saved === "es" || saved === "en") return saved; } catch (e) {}
+    return /^es\b/i.test(navigator.language || "") ? "es" : "en";
+  })();
+  var STR = {
+    en: {
+      langToggle: "Español", showFor: "Show sign-ups for", allDays: "All days", electionDay: "Election Day",
+      legEv: "Early voting + Election Day", legEd: "Election Day only", legNum: "Number = greeter sign-ups",
+      tipCount: function (n) { return n + " sign-up" + (n === 1 ? "" : "s"); }, tipOn: " on ", tipLoading: "loading sign-ups\u2026",
+      loadingLatest: "Loading the latest sign-ups\u2026", showingSavedUntil: function (t) { return "Showing counts saved at " + t + " until it finishes. "; },
+      canTake: "This can take up to a minute \u2014 you can browse and sign up in the meantime.",
+      checking: "Checking for new sign-ups\u2026", upToDate: "Up to date", asOf: function (t) { return "sign-ups as of " + t; }, refresh: "Refresh",
+      loadFailed: "Couldn\u2019t load the latest sign-ups.", showingSaved: function (t) { return "Showing counts saved at " + t + ". "; },
+      canStill: "You can still sign up. ", tryAgain: "Try again",
+      choose: "Choose a polling place\u2026", inD1: "In District 1", nearD1: "Near District 1", optBoth: " (early + Election Day)",
+      intro: "Tap a polling place on the map (or pick one above) to see open poll-greeting shifts and sign up. Orange sites are open for early voting (Oct 19&ndash;30) and on Election Day (Nov 3); navy sites are Election Day only.",
+      badgeEv: "Early voting + Election Day", badgeEd: "Election Day only", mapLink: "Map &rarr;",
+      copyLink: "Copy link", copied: "Link copied!",
+      pickDay: "1 &middot; Pick a day", signedUp: function (n) { return n + " signed up"; },
+      pickHours: "2 &middot; Pick hours", pickHoursHint: "(pick as many as you like)", needs: "Needs greeters",
+      yourShifts: "Your shifts:", clear: "clear", yourInfo: "3 &middot; Your info",
+      fname: "First name", lname: "Last name", email: "Email", phone: "Phone",
+      contactNote: "We\u2019ll use your email and phone to confirm your shift and send details.",
+      notes: "Notes (optional) \u2014 e.g. bringing a friend",
+      signMeUp: function (n) { return "Sign me up" + (n ? " for " + n + " hour" + (n === 1 ? "" : "s") : ""); }, signingUp: "Signing you up\u2026",
+      errPick: "Pick at least one hour above.", errName: "Please enter your first and last name.",
+      errEmail: "Please enter a valid email address.", errPhone: "Please enter a 10-digit phone number so we can reach you.",
+      errUnconfirmed: "We couldn\u2019t confirm your sign-up. Please wait a few minutes and refresh before trying again \u2014 it may have gone through.",
+      errFormLoad: "The sign-up form didn\u2019t load. Please try again.", errFormOpen: "Couldn\u2019t open the sign-up form.",
+      errGeneric: "Something went wrong. Please try again.",
+      done: function (name) { return "You\u2019re signed up, " + name + "!"; },
+      doneMore: "We\u2019ll be in touch with details. Want another shift? Pick more hours or another location.",
+      addCal: "Add it to your calendar:", calIcs: "Apple / Outlook (.ics)",
+      calTitle: "Poll greeting", calDetails: "Poll-greeting shift for Misael Ramos for District 1. Remember: no campaigning within 100 feet of the polling place entrance."
+    },
+    es: {
+      langToggle: "English", showFor: "Ver inscripciones para", allDays: "Todos los días", electionDay: "Día de las elecciones",
+      legEv: "Votación anticipada + Día de las elecciones", legEd: "Solo Día de las elecciones", legNum: "Número = voluntarios inscritos",
+      tipCount: function (n) { return n + (n === 1 ? " inscrito" : " inscritos"); }, tipOn: " el ", tipLoading: "cargando inscripciones\u2026",
+      loadingLatest: "Cargando las inscripciones más recientes\u2026", showingSavedUntil: function (t) { return "Mientras tanto, mostramos los datos guardados a las " + t + ". "; },
+      canTake: "Esto puede tardar hasta un minuto; mientras tanto puedes explorar e inscribirte.",
+      checking: "Buscando nuevas inscripciones\u2026", upToDate: "Actualizado", asOf: function (t) { return "inscripciones a las " + t; }, refresh: "Actualizar",
+      loadFailed: "No se pudieron cargar las inscripciones más recientes.", showingSaved: function (t) { return "Mostrando los datos guardados a las " + t + ". "; },
+      canStill: "Aún puedes inscribirte. ", tryAgain: "Reintentar",
+      choose: "Elige un lugar de votación\u2026", inD1: "En el Distrito 1", nearD1: "Cerca del Distrito 1", optBoth: " (anticipada + Día de las elecciones)",
+      intro: "Toca un lugar de votación en el mapa (o elige uno arriba) para ver los turnos disponibles para saludar a votantes e inscribirte. Los lugares naranjas abren para la votación anticipada (19&ndash;30 de oct.) y el Día de las elecciones (3 de nov.); los azules, solo el Día de las elecciones.",
+      badgeEv: "Votación anticipada + Día de las elecciones", badgeEd: "Solo Día de las elecciones", mapLink: "Mapa &rarr;",
+      copyLink: "Copiar enlace", copied: "¡Enlace copiado!",
+      pickDay: "1 &middot; Elige un día", signedUp: function (n) { return n + (n === 1 ? " inscrito" : " inscritos"); },
+      pickHours: "2 &middot; Elige las horas", pickHoursHint: "(todas las que quieras)", needs: "Faltan voluntarios",
+      yourShifts: "Tus turnos:", clear: "borrar", yourInfo: "3 &middot; Tus datos",
+      fname: "Nombre", lname: "Apellido", email: "Correo electrónico", phone: "Teléfono",
+      contactNote: "Usaremos tu correo y teléfono para confirmar tu turno y enviarte los detalles.",
+      notes: "Notas (opcional): p. ej., voy con un amigo",
+      signMeUp: function (n) { return "Inscribirme" + (n ? " por " + n + (n === 1 ? " hora" : " horas") : ""); }, signingUp: "Inscribiéndote\u2026",
+      errPick: "Elige al menos una hora arriba.", errName: "Escribe tu nombre y apellido.",
+      errEmail: "Escribe un correo electrónico válido.", errPhone: "Escribe un número de teléfono de 10 dígitos para poder contactarte.",
+      errUnconfirmed: "No pudimos confirmar tu inscripción. Espera unos minutos y actualiza la página antes de intentarlo de nuevo; es posible que sí se haya registrado.",
+      errFormLoad: "El formulario de inscripción no cargó. Inténtalo de nuevo.", errFormOpen: "No se pudo abrir el formulario de inscripción.",
+      errGeneric: "Algo salió mal. Inténtalo de nuevo.",
+      done: function (name) { return "¡Listo, " + name + "! Ya estás en la lista."; },
+      doneMore: "Te contactaremos con los detalles. ¿Quieres otro turno? Elige más horas u otro lugar.",
+      addCal: "Agrégalo a tu calendario:", calIcs: "Apple / Outlook (.ics)",
+      calTitle: "Saludar a votantes", calDetails: "Turno para saludar a votantes con la campaña de Misael Ramos para el Distrito 1. Recuerda: no se permite hacer campaña a menos de 100 pies de la entrada del lugar de votación."
+    }
+  };
+  function T(k) { var v = STR[LANG][k]; return typeof v === "function" ? v.apply(null, Array.prototype.slice.call(arguments, 1)) : v; }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function pad(n) { return (n < 10 ? "0" : "") + n; }
   function dateObj(ymd) { var p = ymd.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
-  function dayLabel(ymd) { var d = dateObj(ymd); return DOW[d.getDay()] + " " + MON[d.getMonth()] + " " + d.getDate(); }
+  // lang: "en" (sheet text, default) or the display language.
+  function dayLabel(ymd, lang) {
+    var d = dateObj(ymd);
+    return lang === "es" ? DOW_ES[d.getDay()] + " " + d.getDate() + " " + MON_ES[d.getMonth()]
+                         : DOW[d.getDay()] + " " + MON[d.getMonth()] + " " + d.getDate();
+  }
   function hourLabel(h) { var hh = h % 12 || 12; return hh + (h < 12 ? "am" : "pm"); }
   function rangeLabel(a, b) {       // [a, b) in hours, e.g. 7–10am, 11am–1pm
     var sameHalf = (a < 12) === (b < 12);
@@ -221,7 +303,7 @@
     return slots.length ? { site: parts[2].trim(), slots: slots } : null;
   }
   // Human-readable shift text: "Sat Oct 24 7–10am, 2–4pm; Sun Oct 25 9–10am"
-  function shiftText(slots) {
+  function shiftText(slots, lang) {
     var byDay = {};
     slots.forEach(function (k) { var p = k.split(" "); (byDay[p[0]] = byDay[p[0]] || []).push(+p[1]); });
     return Object.keys(byDay).sort().map(function (d) {
@@ -230,7 +312,7 @@
         if (hs[i] === prev + 1) { prev = hs[i]; continue; }
         ranges.push(rangeLabel(start, prev + 1)); start = prev = hs[i];
       }
-      return dayLabel(d) + " " + ranges.join(", ");
+      return dayLabel(d, lang) + " " + ranges.join(", ");
     }).join("; ");
   }
 
@@ -360,8 +442,8 @@
       ifr.style.cssText = "position:fixed;left:0;top:0;width:900px;height:1200px;max-width:100vw;border:0;opacity:0;pointer-events:none;z-index:-1";
       var giveUp = setTimeout(function () {
         finish(stage === "submitted"
-          ? new Error("We couldn’t confirm your sign-up. Please wait a few minutes and refresh before trying again — it may have gone through.")
-          : new Error("The sign-up form didn’t load. Please try again."));
+          ? new Error(T("errUnconfirmed"))
+          : new Error(T("errFormLoad")));
       }, 30000);
       function finish(err) {
         if (done) return; done = true;
@@ -370,7 +452,7 @@
         err ? reject(err) : resolve();
       }
       ifr.onload = function () {
-        var doc; try { doc = ifr.contentDocument; } catch (e) { return finish(new Error("Couldn’t open the sign-up form.")); }
+        var doc; try { doc = ifr.contentDocument; } catch (e) { return finish(new Error(T("errFormOpen"))); }
         if (!doc || doc.location.href === "about:blank") return;
         if (stage === "submitted") return finish();          // form redirected (to /poll-greeting) => accepted
         if (stage !== "load") return;
@@ -380,7 +462,7 @@
           doc = ifr.contentDocument || doc;
           if (stage === "fill") {
             var btn = fillForm(doc, v);
-            if (!btn) { if (++tries > 60) finish(new Error("The sign-up form didn’t load. Please try again.")); return; }
+            if (!btn) { if (++tries > 60) finish(new Error(T("errFormLoad"))); return; }
             if (CFG.dryRun) { clearInterval(poll); console.log("[poll-greet] dry run: form filled, not submitted", v); return finish(); }
             stage = "submitted"; tries = 0; sqForm = btn.form;
             setTimeout(function () { btn.click(); }, 150);
@@ -411,6 +493,104 @@
     var panel = document.getElementById("pg-panel"), daySel = document.getElementById("pg-day");
     var sites = [], byName = {}, counts = {}, markers = {};
     var state = { site: null, day: null, picked: {}, filterDay: "", form: { fname: "", lname: "", email: "", phone: "", notes: "" } };
+    var legendEl = null, langBtn = document.getElementById("pg-lang");
+
+    // Static text outside the panel: day-filter label/options, legend, language button.
+    function renderChrome() {
+      document.getElementById("pg-day-label").textContent = T("showFor");
+      langBtn.textContent = T("langToggle");
+      langBtn.setAttribute("lang", LANG === "es" ? "en" : "es");
+      var allDays = EV_DAYS.concat([ED_DAY]).filter(function (d) { return !isPast(d, 23); });
+      daySel.innerHTML = '<option value="">' + T("allDays") + "</option>" + allDays.map(function (d) {
+        return '<option value="' + d + '"' + (d === state.filterDay ? " selected" : "") + ">" + dayLabel(d, LANG) + (d === ED_DAY ? " \u00b7 " + T("electionDay") : "") + "</option>";
+      }).join("");
+      if (legendEl) legendEl.innerHTML =
+        '<div><span class="sw" style="background:#fa721e"></span>' + T("legEv") + "</div>" +
+        '<div><span class="sw" style="background:#0e2952"></span>' + T("legEd") + "</div>" +
+        '<div style="color:#5b6b82">' + T("legNum") + "</div>";
+    }
+    langBtn.addEventListener("click", function () {
+      LANG = LANG === "es" ? "en" : "es";
+      try { localStorage.setItem("pg-lang", LANG); } catch (e) {}
+      renderChrome(); renderLive(); drawMarkers(); renderPanel();
+    });
+
+    // ---- deep links: ?site=carver-branch-library&day=2026-10-24 --------
+    // `site` matches the slug exactly, else the first site whose slug starts
+    // with / contains it (so ?site=carver works). `day` alone sets the filter.
+    function slug(t) { return String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
+    function applyDeepLink() {
+      var q = new URLSearchParams(location.search), want = slug(q.get("site") || ""), day = q.get("day") || "";
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) day = "";
+      var s = null;
+      if (want) s = sites.filter(function (x) { return slug(x.n) === want; })[0] ||
+                    sites.filter(function (x) { return slug(x.n).indexOf(want) === 0; })[0] ||
+                    sites.filter(function (x) { return slug(x.n).indexOf(want) !== -1; })[0] || null;
+      if (day && !s && EV_DAYS.concat([ED_DAY]).indexOf(day) !== -1) state.filterDay = day;
+      if (s) {
+        state.site = s;
+        var upcoming = s.days.filter(function (d) { return !isPast(d, 23); });
+        state.day = day && s.days.indexOf(day) !== -1 ? day : upcoming[0] || s.days[s.days.length - 1];
+        map.setView([s.lat, s.lng], 14);
+      }
+    }
+    function linkFor(s, day) {
+      var u = new URL(location.href);
+      ["site", "day", "lang"].forEach(function (k) { u.searchParams.delete(k); });
+      if (s) { u.searchParams.set("site", slug(s.n)); if (day) u.searchParams.set("day", day); }
+      else if (state.filterDay) u.searchParams.set("day", state.filterDay);
+      return u.toString();
+    }
+    // Keep the address bar in step with what's selected, so copying it shares this view.
+    function syncUrl() { try { history.replaceState(history.state, "", linkFor(state.site, state.day)); } catch (e) {} }
+
+    // ---- add to calendar ---------------------------------------------
+    // One event per run of consecutive hours. Austin is UTC-5 until DST ends
+    // Nov 1, 2026, then UTC-6 (Election Day).
+    function utcStamp(day, h) {
+      var p = day.split("-"), off = day < "2026-11-01" ? 5 : 6;
+      return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2], h + off)).toISOString().replace(/[-:]|\.\d{3}/g, "");
+    }
+    function shiftEvents(slots) {
+      var byDay = {}, out = [];
+      slots.forEach(function (k) { var p = k.split(" "); (byDay[p[0]] = byDay[p[0]] || []).push(+p[1]); });
+      Object.keys(byDay).sort().forEach(function (d) {
+        var hs = byDay[d].sort(function (a, b) { return a - b; }), start = hs[0], prev = hs[0];
+        for (var i = 1; i <= hs.length; i++) {
+          if (hs[i] === prev + 1) { prev = hs[i]; continue; }
+          out.push({ day: d, start: start, end: prev + 1 }); start = prev = hs[i];
+        }
+      });
+      return out;
+    }
+    function googleCalUrl(s, ev) {
+      return "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+        "&text=" + encodeURIComponent(T("calTitle") + " \u00b7 " + s.n) +
+        "&dates=" + utcStamp(ev.day, ev.start) + "/" + utcStamp(ev.day, ev.end) +
+        "&details=" + encodeURIComponent(T("calDetails")) +
+        "&location=" + encodeURIComponent(s.n + ", " + s.a);
+    }
+    function icsUrl(s, events) {
+      function icsEsc(t) { return String(t).replace(/[\\;,]/g, function (c) { return "\\" + c; }); }
+      var now = new Date().toISOString().replace(/[-:]|\.\d{3}/g, ""), lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//district1-map//poll-greeting//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH"];
+      events.forEach(function (ev, i) {
+        lines.push("BEGIN:VEVENT", "UID:pg-" + now + "-" + i + "-" + Math.random().toString(36).slice(2) + "@district1-map",
+          "DTSTAMP:" + now, "DTSTART:" + utcStamp(ev.day, ev.start), "DTEND:" + utcStamp(ev.day, ev.end),
+          "SUMMARY:" + icsEsc(T("calTitle") + " \u00b7 " + s.n), "LOCATION:" + icsEsc(s.n + ", " + s.a),
+          "DESCRIPTION:" + icsEsc(T("calDetails")), "END:VEVENT");
+      });
+      lines.push("END:VCALENDAR");
+      return URL.createObjectURL(new Blob([lines.join("\r\n") + "\r\n"], { type: "text/calendar" }));
+    }
+    function calendarHtml(s, slots) {
+      var events = shiftEvents(slots);
+      return '<div style="margin-top:8px">' + T("addCal") + '<div class="pg-chips" style="margin-top:6px">' +
+        events.slice(0, 4).map(function (ev) {
+          return '<a class="pg-cal" href="' + esc(googleCalUrl(s, ev)) + '" target="_blank" rel="noopener">Google &middot; ' +
+            esc(dayLabel(ev.day, LANG) + " " + rangeLabel(ev.start, ev.end)) + "</a>";
+        }).join("") +
+        '<a class="pg-cal" href="' + icsUrl(s, events) + '" download="poll-greeting.ics">' + T("calIcs") + "</a></div></div>";
+    }
 
     // counts[site][slotKey] = n
     function countOf(site, key) { return (counts[site] && counts[site][key]) || 0; }
@@ -457,23 +637,23 @@
     var liveEl = document.getElementById("pg-live"),
         live = { mode: "loading", started: Date.now(), busy: false, inflight: false, retried: false }, liveTick = null;
     function whenText(ms) {
-      var d = new Date(ms), t = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-      return new Date().toDateString() === d.toDateString() ? t : MON[d.getMonth()] + " " + d.getDate() + ", " + t;
+      var d = new Date(ms), t = d.toLocaleTimeString(LANG === "es" ? "es-US" : "en-US", { hour: "numeric", minute: "2-digit" });
+      return new Date().toDateString() === d.toDateString() ? t
+        : (LANG === "es" ? d.getDate() + " " + MON_ES[d.getMonth()] : MON[d.getMonth()] + " " + d.getDate()) + ", " + t;
     }
     function renderLive() {
       var secs = Math.round((Date.now() - live.started) / 1000), h;
       if (live.mode === "loading") {
-        h = '<span class="pg-spin pg-spin-dark"></span><div><strong>Loading the latest sign-ups\u2026</strong> <span class="pg-live-secs">' + secs + "s</span>" +
-            '<div class="pg-live-sub">' + (countsKnown && savedAt ? "Showing counts saved at " + whenText(savedAt) + " until it finishes. " : "") +
-            "This can take up to a minute \u2014 you can browse and sign up in the meantime.</div></div>";
+        h = '<span class="pg-spin pg-spin-dark"></span><div><strong>' + T("loadingLatest") + '</strong> <span class="pg-live-secs">' + secs + "s</span>" +
+            '<div class="pg-live-sub">' + (countsKnown && savedAt ? T("showingSavedUntil", whenText(savedAt)) : "") + T("canTake") + "</div></div>";
       } else if (live.mode === "ok") {
         h = (live.busy ? '<span class="pg-spin pg-spin-dark"></span>' : '<span class="pg-live-dot"></span>') + "<div>" +
-            (live.busy ? "Checking for new sign-ups\u2026"
-                       : "<strong>Up to date</strong> &middot; sign-ups as of " + whenText(liveAt) + ' &nbsp;<a href="#" class="pg-link" data-live-refresh>Refresh</a>') + "</div>";
+            (live.busy ? T("checking")
+                       : "<strong>" + T("upToDate") + "</strong> &middot; " + T("asOf", whenText(liveAt)) + ' &nbsp;<a href="#" class="pg-link" data-live-refresh>' + T("refresh") + "</a>") + "</div>";
       } else {
-        h = "<div><strong>Couldn\u2019t load the latest sign-ups.</strong> " +
-            (countsKnown && savedAt ? "Showing counts saved at " + whenText(savedAt) + ". " : "You can still sign up. ") +
-            '<a href="#" class="pg-link" data-live-refresh>Try again</a></div>';
+        h = "<div><strong>" + T("loadFailed") + "</strong> " +
+            (countsKnown && savedAt ? T("showingSaved", whenText(savedAt)) : T("canStill")) +
+            '<a href="#" class="pg-link" data-live-refresh>' + T("tryAgain") + "</a></div>";
       }
       liveEl.className = "pg-live " + live.mode;
       liveEl.innerHTML = h;
@@ -528,30 +708,25 @@
 
       var allBounds = ol.getBounds();
       sites.forEach(function (s) { allBounds.extend([s.lat, s.lng]); });
-      function fit() { map.invalidateSize(); map.fitBounds(allBounds, { padding: [16, 16] }); }
+      function fit() {
+        map.invalidateSize();
+        if (state.site) map.setView([state.site.lat, state.site.lng], Math.max(map.getZoom(), 14));   // deep link: stay on the site
+        else map.fitBounds(allBounds, { padding: [16, 16] });
+      }
       fit(); setTimeout(fit, 300); window.addEventListener("load", fit);
 
       var legend = L.control({ position: "bottomleft" });
-      legend.onAdd = function () {
-        var d = L.DomUtil.create("div", "pg-legend");
-        d.innerHTML = '<div><span class="sw" style="background:#fa721e"></span>Early voting + Election Day</div>' +
-                      '<div><span class="sw" style="background:#0e2952"></span>Election Day only</div>' +
-                      '<div style="color:#5b6b82">Number = greeter sign-ups</div>';
-        return d;
-      };
+      legend.onAdd = function () { legendEl = L.DomUtil.create("div", "pg-legend"); return legendEl; };
       legend.addTo(map);
 
-      // Day filter
-      var allDays = EV_DAYS.concat([ED_DAY]).filter(function (d) { return !isPast(d, 23); });
-      daySel.innerHTML = '<option value="">All days</option>' + allDays.map(function (d) {
-        return '<option value="' + d + '">' + dayLabel(d) + (d === ED_DAY ? " · Election Day" : "") + "</option>";
-      }).join("");
       daySel.addEventListener("change", function () {
         state.filterDay = daySel.value;
         if (state.filterDay && state.site && state.site.days.indexOf(state.filterDay) !== -1) state.day = state.filterDay;
-        drawMarkers(); renderPanel();
+        drawMarkers(); renderPanel(); syncUrl();
       });
 
+      applyDeepLink();
+      renderChrome();
       drawMarkers();
       renderPanel();
     }).catch(function (err) {
@@ -571,7 +746,7 @@
         });
         var m = L.marker([s.lat, s.lng], { icon: icon, zIndexOffset: sel ? 1000 : (s.k === "both" ? 500 : 0), keyboard: true, title: s.n })
           .addTo(map)
-          .bindTooltip(esc(s.n) + '<br><span style="font-weight:400">' + (countsKnown ? n + " sign-up" + (n === 1 ? "" : "s") + (state.filterDay ? " on " + dayLabel(state.filterDay) : "") : "loading sign-ups…") + "</span>",
+          .bindTooltip(esc(s.n) + '<br><span style="font-weight:400">' + (countsKnown ? T("tipCount", n) + (state.filterDay ? T("tipOn") + dayLabel(state.filterDay, LANG) : "") : T("tipLoading")) + "</span>",
             { className: "pg-tip", direction: "top", offset: [0, -14] })
           .on("click", function () { selectSite(s); });
         markers[s.n] = m;
@@ -584,7 +759,7 @@
       var upcoming = s.days.filter(function (d) { return !isPast(d, 23); });
       state.day = state.filterDay && upcoming.indexOf(state.filterDay) !== -1 ? state.filterDay : upcoming[0] || s.days[s.days.length - 1];
       state.msg = null;
-      drawMarkers(); renderPanel();
+      drawMarkers(); renderPanel(); syncUrl();
       map.panTo([s.lat, s.lng]);
       if (window.innerWidth < 800) panel.scrollIntoView({ behavior: "smooth", block: "start" });
     }
@@ -593,61 +768,62 @@
 
     function renderPanel() {
       var s = state.site, html = "";
-      var siteOpts = '<option value="">Choose a polling place…</option>' +
-        '<optgroup label="In District 1">' + sites.filter(function (x) { return x.inD1; }).map(opt).join("") + "</optgroup>" +
-        (sites.some(function (x) { return !x.inD1; }) ? '<optgroup label="Near District 1">' + sites.filter(function (x) { return !x.inD1; }).map(opt).join("") + "</optgroup>" : "");
-      function opt(x) { return '<option value="' + esc(x.n) + '"' + (x === s ? " selected" : "") + ">" + esc(x.n) + (x.k === "both" ? " (early + Election Day)" : "") + "</option>"; }
+      var siteOpts = '<option value="">' + T("choose") + "</option>" +
+        '<optgroup label="' + T("inD1") + '">' + sites.filter(function (x) { return x.inD1; }).map(opt).join("") + "</optgroup>" +
+        (sites.some(function (x) { return !x.inD1; }) ? '<optgroup label="' + T("nearD1") + '">' + sites.filter(function (x) { return !x.inD1; }).map(opt).join("") + "</optgroup>" : "");
+      function opt(x) { return '<option value="' + esc(x.n) + '"' + (x === s ? " selected" : "") + ">" + esc(x.n) + (x.k === "both" ? T("optBoth") : "") + "</option>"; }
+      function msgHtml() { return state.msg.fn ? state.msg.fn() : state.msg.html; }
 
       if (state.msg && state.msg.ok && !s) {
-        html += '<div class="pg-msg ok" style="margin:0 0 12px">' + state.msg.html + "</div>";
+        html += '<div class="pg-msg ok" style="margin:0 0 12px">' + msgHtml() + "</div>";
       }
       html += '<select id="pg-site" class="pg-select" aria-label="Polling place">' + siteOpts + "</select>";
 
       if (!s) {
-        html += '<p class="pg-muted" style="margin:14px 2px 0">Tap a polling place on the map (or pick one above) to see open poll-greeting shifts and sign up. ' +
-                'Orange sites are open for early voting (Oct 19&ndash;30) and on Election Day (Nov 3); navy sites are Election Day only.</p>';
+        html += '<p class="pg-muted" style="margin:14px 2px 0">' + T("intro") + "</p>";
         panel.innerHTML = html; bindPanel(); return;
       }
 
       html += '<div style="margin-top:14px"><div class="pg-h">' + esc(s.n) + "</div>" +
         '<div class="pg-muted">' + (s.r ? esc(s.r) + " &middot; " : "") + esc(s.a) + "</div>" +
-        '<span class="pg-badge ' + (s.inD1 ? 'pg-b-in">In District 1' : 'pg-b-near">Near District 1') + "</span>" +
-        '<span class="pg-badge pg-b-ev">' + (s.k === "both" ? "Early voting + Election Day" : "Election Day only") + "</span>" +
+        '<span class="pg-badge ' + (s.inD1 ? 'pg-b-in">' + T("inD1") : 'pg-b-near">' + T("nearD1")) + "</span>" +
+        '<span class="pg-badge pg-b-ev">' + (s.k === "both" ? T("badgeEv") : T("badgeEd")) + "</span>" +
         (s.note ? '<div class="pg-muted" style="margin-top:4px"><em>' + esc(s.note) + "</em></div>" : "") +
-        ' <a class="pg-link" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.n + ", " + s.a) + '" target="_blank" rel="noopener">Map &rarr;</a></div>';
+        ' <a class="pg-link" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.n + ", " + s.a) + '" target="_blank" rel="noopener">' + T("mapLink") + "</a>" +
+        ' &nbsp;<a class="pg-link" href="' + esc(linkFor(s, state.day)) + '" id="pg-copy">' + T("copyLink") + "</a></div>";
 
       // Days
-      html += '<span class="pg-label">1 &middot; Pick a day</span><div class="pg-chips">' + s.days.map(function (d) {
+      html += '<span class="pg-label">' + T("pickDay") + '</span><div class="pg-chips">' + s.days.map(function (d) {
         var past = isPast(d, 23), n = siteTotal(s.n, d), mine = pickedKeys().some(function (k) { return k.indexOf(d) === 0; });
         return '<button type="button" class="pg-chip' + (d === state.day ? " on" : "") + (mine ? " has" : "") + '" data-day="' + d + '"' + (past ? " disabled" : "") + ">" +
-          dayLabel(d) + "<small>" + (countsKnown ? n + " signed up" : "…") + "</small></button>";
+          dayLabel(d, LANG) + "<small>" + (countsKnown ? T("signedUp", n) : "…") + "</small></button>";
       }).join("") + "</div>";
 
       // Hours
-      html += '<span class="pg-label">2 &middot; Pick hours <span style="text-transform:none;letter-spacing:0;font-weight:500;color:#5b6b82">(pick as many as you like)</span></span><div class="pg-slots">' +
+      html += '<span class="pg-label">' + T("pickHours") + ' <span style="text-transform:none;letter-spacing:0;font-weight:500;color:#5b6b82">' + T("pickHoursHint") + '</span></span><div class="pg-slots">' +
         siteHours(s, state.day).map(function (h) {
           var key = slotKey(state.day, h), n = countOf(s.n, key), on = !!state.picked[key], past = isPast(state.day, h);
           var cls = "pg-slot" + (on ? " on" : "") + (!countsKnown ? "" : n >= CFG.target ? " full" : n === 0 ? " need" : "");
-          var sub = !countsKnown ? "…" : n === 0 ? "Needs greeters" : n + " signed up";
+          var sub = !countsKnown ? "…" : n === 0 ? T("needs") : T("signedUp", n);
           return '<button type="button" class="' + cls + '" data-slot="' + key + '"' + (past ? " disabled" : "") + ' aria-pressed="' + on + '"><b>' + rangeLabel(h, h + 1) + "</b><span>" + sub + "</span></button>";
         }).join("") + "</div>";
 
       var picked = pickedKeys();
-      if (picked.length) html += '<div class="pg-picked"><strong>Your shifts:</strong> ' + esc(shiftText(picked)) + ' &nbsp;<a href="#" class="pg-link" id="pg-clear">clear</a></div>';
+      if (picked.length) html += '<div class="pg-picked"><strong>' + T("yourShifts") + "</strong> " + esc(shiftText(picked, LANG)) + ' &nbsp;<a href="#" class="pg-link" id="pg-clear">' + T("clear") + "</a></div>";
 
       // Contact
       var f = state.form;
-      html += '<span class="pg-label">3 &middot; Your info</span>' +
+      html += '<span class="pg-label">' + T("yourInfo") + "</span>" +
         '<form id="pg-form" novalidate>' +
-        '<div class="pg-grid2"><input class="pg-input" name="fname" placeholder="First name" autocomplete="given-name" required value="' + esc(f.fname) + '">' +
-        '<input class="pg-input" name="lname" placeholder="Last name" autocomplete="family-name" required value="' + esc(f.lname) + '"></div>' +
-        '<div class="pg-grid2" style="margin-top:8px"><input class="pg-input" name="email" type="email" placeholder="Email" autocomplete="email" required value="' + esc(f.email) + '">' +
-        '<input class="pg-input" name="phone" type="tel" placeholder="Phone" autocomplete="tel-national" required value="' + esc(f.phone) + '"></div>' +
-        '<div class="pg-muted" style="margin:6px 2px 0">We\u2019ll use your email and phone to confirm your shift and send details.</div>' +
-        '<input class="pg-input" name="notes" style="margin-top:8px" placeholder="Notes (optional) — e.g. bringing a friend" value="' + esc(f.notes) + '">' +
-        '<button type="submit" class="pg-btn" id="pg-submit">Sign me up' + (picked.length ? " for " + picked.length + " hour" + (picked.length === 1 ? "" : "s") : "") + "</button>" +
+        '<div class="pg-grid2"><input class="pg-input" name="fname" placeholder="' + T("fname") + '" autocomplete="given-name" required value="' + esc(f.fname) + '">' +
+        '<input class="pg-input" name="lname" placeholder="' + T("lname") + '" autocomplete="family-name" required value="' + esc(f.lname) + '"></div>' +
+        '<div class="pg-grid2" style="margin-top:8px"><input class="pg-input" name="email" type="email" placeholder="' + T("email") + '" autocomplete="email" required value="' + esc(f.email) + '">' +
+        '<input class="pg-input" name="phone" type="tel" placeholder="' + T("phone") + '" autocomplete="tel-national" required value="' + esc(f.phone) + '"></div>' +
+        '<div class="pg-muted" style="margin:6px 2px 0">' + T("contactNote") + "</div>" +
+        '<input class="pg-input" name="notes" style="margin-top:8px" placeholder="' + T("notes") + '" value="' + esc(f.notes) + '">' +
+        '<button type="submit" class="pg-btn" id="pg-submit">' + T("signMeUp", picked.length) + "</button>" +
         "</form>";
-      if (state.msg) html += '<div class="pg-msg ' + (state.msg.ok ? "ok" : "err") + '" role="status">' + state.msg.html + "</div>";
+      if (state.msg) html += '<div class="pg-msg ' + (state.msg.ok ? "ok" : "err") + '" role="status">' + msgHtml() + "</div>";
 
       panel.innerHTML = html;
       bindPanel();
@@ -658,10 +834,18 @@
       sel.addEventListener("change", function () { var s = byName[sel.value]; if (s) selectSite(s); });
       if (!state.site) return;
       Array.prototype.forEach.call(panel.querySelectorAll("[data-day]"), function (b) {
-        b.addEventListener("click", function () { state.day = b.getAttribute("data-day"); renderPanel(); });
+        b.addEventListener("click", function () { state.day = b.getAttribute("data-day"); renderPanel(); syncUrl(); });
       });
       Array.prototype.forEach.call(panel.querySelectorAll("[data-slot]"), function (b) {
         b.addEventListener("click", function () { var k = b.getAttribute("data-slot"); state.picked[k] = !state.picked[k]; state.msg = null; renderPanel(); });
+      });
+      var cp = document.getElementById("pg-copy");
+      cp.addEventListener("click", function (e) {
+        e.preventDefault();
+        var url = cp.href;
+        function ok() { cp.textContent = T("copied"); setTimeout(function () { if (cp.isConnected) cp.textContent = T("copyLink"); }, 2000); }
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, function () { location.href = url; });
+        else location.href = url;
       });
       var clr = document.getElementById("pg-clear");
       if (clr) clr.addEventListener("click", function (e) { e.preventDefault(); state.picked = {}; renderPanel(); });
@@ -673,32 +857,34 @@
     function onSubmit(e) {
       e.preventDefault();
       var f = state.form, s = state.site, picked = pickedKeys();
-      function fail(m) { state.msg = { ok: false, html: m }; renderPanel(); }
-      if (!picked.length) return fail("Pick at least one hour above.");
-      if (!f.fname.trim() || !f.lname.trim()) return fail("Please enter your first and last name.");
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) return fail("Please enter a valid email address.");
+      function fail(k) { state.msg = { ok: false, fn: function () { return T(k); } }; renderPanel(); }
+      if (!picked.length) return fail("errPick");
+      if (!f.fname.trim() || !f.lname.trim()) return fail("errName");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) return fail("errEmail");
       var digits = f.phone.replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
-      if (digits.length !== 10) return fail("Please enter a 10-digit phone number so we can reach you.");
+      if (digits.length !== 10) return fail("errPhone");
 
       var v = {
         fname: f.fname.trim(), lname: f.lname.trim(), email: f.email.trim(), phone: digits,
         shift: "Shift: " + shiftText(picked),
         location: "Location: " + s.n + " (" + s.a + ")",
-        notes: f.notes.trim() ? "Notes: " + f.notes.trim() : "",
+        // Sheet text stays English; flag Spanish sign-ups so organizers can follow up in Spanish.
+        notes: (f.notes.trim() || LANG === "es") ? "Notes: " + f.notes.trim() + (LANG === "es" ? (f.notes.trim() ? " " : "") + "(signed up in Spanish)" : "") : "",
         key: encodeKey(s.n, picked)
       };
       var btn = document.getElementById("pg-submit");
-      btn.disabled = true; btn.innerHTML = '<span class="pg-spin"></span>Signing you up…';
+      btn.disabled = true; btn.innerHTML = '<span class="pg-spin"></span>' + T("signingUp");
 
       submitSignup(v).then(function () {
         localKeys.push(v.key); rebuildCounts();
-        var summary = esc(shiftText(picked));
         state.picked = {}; state.form.notes = "";
-        state.msg = { ok: true, html: "<strong>You’re signed up, " + esc(v.fname) + "!</strong><br>" + esc(s.n) + " &middot; " + summary +
-          "<br>We’ll be in touch with details. Want another shift? Pick more hours or another location." };
+        state.msg = { ok: true, fn: function () {
+          return "<strong>" + esc(T("done", v.fname)) + "</strong><br>" + esc(s.n) + " &middot; " + esc(shiftText(picked, LANG)) +
+            calendarHtml(s, picked) + '<div style="margin-top:8px">' + T("doneMore") + "</div>";
+        } };
         drawMarkers(); renderPanel();
       }).catch(function (err) {
-        fail(esc(err.message || "Something went wrong. Please try again."));
+        state.msg = { ok: false, html: esc(err.message || T("errGeneric")) }; renderPanel();
       });
     }
   }

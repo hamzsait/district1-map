@@ -139,6 +139,24 @@ Column order in the sheet doesn't matter — the reader scans every cell of a ro
 for `PG|v1|`. Rows without it (like hand-entered ones) are ignored. **To cancel
 someone's sign-up, delete their row** (or clear its `PG|v1|` cell).
 
+**Links to a site / day.** `/poll-greeting?site=carver&day=2026-10-24` opens
+with that polling place and day selected (`site` matches the start of, or any
+part of, the site name as a slug, e.g. `millennium`, `lbj-school`,
+`austin-energy`). `?day=…` alone sets the "Show sign-ups for" filter. The
+address bar follows whatever is selected, and each site has a **Copy link**
+button, so organizers can grab a link straight from the page.
+
+**Español.** An English/Español button switches the whole widget. Spanish is
+also chosen automatically for browsers set to Spanish, remembered per visitor,
+and can be forced with `?lang=es` (or `?lang=en`) — e.g. for Spanish-language
+outreach texts. What's written to the sheet stays English; sign-ups made in
+Spanish get "(signed up in Spanish)" in the notes so organizers can follow up
+in Spanish.
+
+**Add to calendar.** After signing up, volunteers get a Google Calendar button
+per shift block and an `.ics` file (Apple Calendar / Outlook) with every block,
+with the address and a reminder about the 100-foot electioneering line.
+
 Slots: hourly, 7am–7pm Oct 19–30 at early-voting sites (to 10pm Oct 29–30 at
 extended-hours sites), and 7am–7pm Nov 3 at every site. Past slots are disabled.
 
