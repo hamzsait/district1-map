@@ -46,7 +46,7 @@
 
   // ---- configuration -------------------------------------------
   // Apps Script web-app URL (Deploy → Manage deployments → Web app URL).
-  var API_URL = "https://script.google.com/macros/s/AKfycbxsjoJFc-eQWUfFJ1CmlVppWCkkmSf2iAx0wz-gWagcSzaA1YeVs_CQxnzxUx22loAc/exec";
+  var API_URL = "https://script.google.com/macros/s/AKfycbyHMGXDKwnV_ETZ6XzQLP8kqrA7k_18K5Nr2rCItzUYwCqw6wEaH-3On2Vut01jEhac/exec";
 
   var CFG = {
     api:    opt("api", API_URL),
