@@ -40,6 +40,7 @@ place finder, with no tab bar. Omit `data-mode` for all three.
 
 - **Voter lookup** (default tab) — type a name, get typeahead matches from the D1 voter roll with Active/Suspense status, registered address, and precinct; clicking a match pins the address on the map
 - District 1 outline + precinct boundaries with hover tooltips showing registered/active voter counts
+- **Polling places on the map** (every tab) — every early-voting and Election Day site in District 1 or within 1 mile of it (`data-buffer-mi` on the embed div changes the distance; `0` = inside D1 only). **Orange** = early voting (those sites are also open on Election Day), **navy** = Election Day only, matching the poll-greeting map; sites just outside D1 are slightly faded. Click a dot for hours, address and directions. A searched address shows as a map-pin shape so it isn't mistaken for an orange early-voting dot.
 - **Address search with autocomplete** — suggestions as you type from the City of Austin's public address locator (ArcGIS, no API key); handles house-number ranges, not just mapped buildings
 - **Use my location** — browser geolocation (requires HTTPS, which Squarespace provides; the user must click "Allow")
 - When the address is in District 1, a **Request a yard sign →** button links to `/request-a-yard-sign?street=…&city=…&state=…&zip=…`

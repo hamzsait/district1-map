@@ -30,9 +30,14 @@
   });
   if (!MODES.length) MODES = ["voter", "address", "polling"];
 
+  // data-buffer-mi: also show polling places within N miles of District 1
+  // (default 1, like the poll-greeting map; 0 = only those inside D1).
+  var BUFFER_MI = parseFloat(root.getAttribute("data-buffer-mi"));
+  if (isNaN(BUFFER_MI)) BUFFER_MI = 1;
+
   // ---- styles + markup -----------------------------------------
   var style = document.createElement("style");
-  style.textContent = '#d1-wrap { font-family: inherit; color: #0e2952; }\n  #d1-map .leaflet-container { font: 13px/1.4 "Prompt", Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }\n  #d1-wrap .d1-input { width:100%; box-sizing:border-box; padding:12px 16px; border:2px solid #0e2952; border-radius:999px; font-size:16px; font-family:inherit; color:#0e2952; background:#fff; outline:none; }\n  #d1-wrap .d1-input:focus { box-shadow:0 0 0 3px rgba(250,114,30,.35); }\n  #d1-wrap .d1-input::placeholder { color:#6b7a90; }\n  #d1-wrap .d1-btn { padding:12px 22px; border-radius:999px; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; letter-spacing:.02em; white-space:nowrap; }\n  #d1-wrap .d1-btn-primary { background:#fa721e; color:#fff; border:2px solid #fff; box-shadow:0 0 0 2px #fa721e; }\n  #d1-wrap .d1-btn-primary:hover { background:#e8630f; }\n  #d1-wrap .d1-btn-secondary { background:#fff; color:#0e2952; border:2px solid #0e2952; }\n  #d1-wrap .d1-btn-secondary:hover { background:#f8f4ec; }\n  #d1-wrap .d1-sugg { position:absolute; left:12px; right:12px; top:calc(100% + 4px); z-index:2000; background:#fff; border:2px solid #0e2952; border-radius:14px; box-shadow:0 6px 18px rgba(14,41,82,.18); margin:0; padding:6px 0; list-style:none; max-height:280px; overflow-y:auto; }\n  #d1-wrap .d1-sugg li { padding:9px 16px; cursor:pointer; font-size:15px; line-height:1.3; color:#0e2952; }\n  #d1-wrap .d1-sugg li small { display:block; color:#5b6b82; font-size:12.5px; }\n  #d1-wrap .d1-sugg li:hover, #d1-wrap .d1-sugg li.active { background:#f8f4ec; }\n  #d1-map .precinct-tip { background:#0e2952; color:#fff; border:0; border-radius:8px; padding:5px 10px; font-weight:600; box-shadow:0 2px 8px rgba(14,41,82,.3); }\n  #d1-map .precinct-tip::before { display:none; }\n  #d1-map .d1-legend { background:#fff; color:#0e2952; padding:10px 12px; border-radius:10px; border:2px solid #0e2952; line-height:1.7; font-size:13px; }\n  #d1-map .d1-legend .sw { display:inline-block; width:22px; height:13px; vertical-align:middle; margin-right:7px; border-radius:3px; box-sizing:border-box; }\n  #d1-map .leaflet-popup-content-wrapper { border-radius:12px; border:2px solid #0e2952; box-shadow:0 6px 18px rgba(14,41,82,.2); color:#0e2952; }\n  #d1-map .leaflet-popup-tip { background:#0e2952; }\n  #d1-map .leaflet-bar a { color:#0e2952; }\n  #d1-map .leaflet-tile-pane { filter: saturate(.45) contrast(.92); }\n  #d1-map .leaflet-control-attribution a { color:#0e2952; }\n  #d1-wrap .d1-cta, #d1-map .d1-cta { display:inline-block; margin-top:8px; padding:7px 14px; border-radius:999px; background:#fa721e; color:#fff !important; font-weight:600; font-size:13px; text-decoration:none !important; border:2px solid #fff; box-shadow:0 0 0 2px #fa721e; }\n  #d1-wrap .d1-cta:hover, #d1-map .d1-cta:hover { background:#e8630f; }\n  #d1-wrap .d1-tab { padding:9px 20px; border-radius:999px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; background:#fff; color:#0e2952; border:2px solid #0e2952; }\n  #d1-wrap .d1-tab.active { background:#0e2952; color:#fff; }\n  #d1-wrap .d1-sugg li .d1-badge { display:inline-block; font-size:11px; font-weight:700; padding:1px 8px; border-radius:999px; margin-left:6px; vertical-align:1px; }\n  #d1-wrap .d1-badge-active { background:#e7f5ec; color:#177245; }\n  #d1-wrap .d1-badge-susp { background:#fdeee3; color:#c2410c; }\n  #d1-wrap .d1-note { font-size:12.5px; color:#5b6b82; margin:6px 2px 0; }';
+  style.textContent = '#d1-wrap { font-family: inherit; color: #0e2952; }\n  #d1-map .leaflet-container { font: 13px/1.4 "Prompt", Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }\n  #d1-wrap .d1-input { width:100%; box-sizing:border-box; padding:12px 16px; border:2px solid #0e2952; border-radius:999px; font-size:16px; font-family:inherit; color:#0e2952; background:#fff; outline:none; }\n  #d1-wrap .d1-input:focus { box-shadow:0 0 0 3px rgba(250,114,30,.35); }\n  #d1-wrap .d1-input::placeholder { color:#6b7a90; }\n  #d1-wrap .d1-btn { padding:12px 22px; border-radius:999px; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; letter-spacing:.02em; white-space:nowrap; }\n  #d1-wrap .d1-btn-primary { background:#fa721e; color:#fff; border:2px solid #fff; box-shadow:0 0 0 2px #fa721e; }\n  #d1-wrap .d1-btn-primary:hover { background:#e8630f; }\n  #d1-wrap .d1-btn-secondary { background:#fff; color:#0e2952; border:2px solid #0e2952; }\n  #d1-wrap .d1-btn-secondary:hover { background:#f8f4ec; }\n  #d1-wrap .d1-sugg { position:absolute; left:12px; right:12px; top:calc(100% + 4px); z-index:2000; background:#fff; border:2px solid #0e2952; border-radius:14px; box-shadow:0 6px 18px rgba(14,41,82,.18); margin:0; padding:6px 0; list-style:none; max-height:280px; overflow-y:auto; }\n  #d1-wrap .d1-sugg li { padding:9px 16px; cursor:pointer; font-size:15px; line-height:1.3; color:#0e2952; }\n  #d1-wrap .d1-sugg li small { display:block; color:#5b6b82; font-size:12.5px; }\n  #d1-wrap .d1-sugg li:hover, #d1-wrap .d1-sugg li.active { background:#f8f4ec; }\n  #d1-map .precinct-tip { background:#0e2952; color:#fff; border:0; border-radius:8px; padding:5px 10px; font-weight:600; box-shadow:0 2px 8px rgba(14,41,82,.3); }\n  #d1-map .precinct-tip::before { display:none; }\n  #d1-map .d1-legend { background:#fff; color:#0e2952; padding:10px 12px; border-radius:10px; border:2px solid #0e2952; line-height:1.7; font-size:13px; }\n  #d1-map .d1-legend .sw { display:inline-block; width:22px; height:13px; vertical-align:middle; margin-right:7px; border-radius:3px; box-sizing:border-box; }\n  #d1-map .leaflet-popup-content-wrapper { border-radius:12px; border:2px solid #0e2952; box-shadow:0 6px 18px rgba(14,41,82,.2); color:#0e2952; }\n  #d1-map .leaflet-popup-tip { background:#0e2952; }\n  #d1-map .leaflet-bar a { color:#0e2952; }\n  #d1-map .leaflet-tile-pane { filter: saturate(.45) contrast(.92); }\n  #d1-map .leaflet-control-attribution a { color:#0e2952; }\n  #d1-wrap .d1-cta, #d1-map .d1-cta { display:inline-block; margin-top:8px; padding:7px 14px; border-radius:999px; background:#fa721e; color:#fff !important; font-weight:600; font-size:13px; text-decoration:none !important; border:2px solid #fff; box-shadow:0 0 0 2px #fa721e; }\n  #d1-wrap .d1-cta:hover, #d1-map .d1-cta:hover { background:#e8630f; }\n  #d1-wrap .d1-tab { padding:9px 20px; border-radius:999px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; background:#fff; color:#0e2952; border:2px solid #0e2952; }\n  #d1-wrap .d1-tab.active { background:#0e2952; color:#fff; }\n  #d1-wrap .d1-sugg li .d1-badge { display:inline-block; font-size:11px; font-weight:700; padding:1px 8px; border-radius:999px; margin-left:6px; vertical-align:1px; }\n  #d1-wrap .d1-badge-active { background:#e7f5ec; color:#177245; }\n  #d1-wrap .d1-badge-susp { background:#fdeee3; color:#c2410c; }\n  #d1-wrap .d1-note { font-size:12.5px; color:#5b6b82; margin:6px 2px 0; }\n  #d1-map .d1-pin { width:16px; height:16px; box-sizing:border-box; border-radius:50%; border:2px solid #fff; box-shadow:0 1px 4px rgba(14,41,82,.55); cursor:pointer; }\n  #d1-map .d1-pin.ev { background:#fa721e; }\n  #d1-map .d1-pin.ed { background:#0e2952; }\n  #d1-map .d1-pin.near { opacity:.75; }\n  #d1-map .d1-pin.big { width:24px; height:24px; border-width:3px; opacity:1; box-shadow:0 0 0 2px #0e2952, 0 2px 8px rgba(14,41,82,.5); }\n  #d1-map .d1-legend .dot { display:inline-block; width:13px; height:13px; box-sizing:border-box; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px #0e2952; vertical-align:-2px; margin:0 11px 0 4px; }\n  #d1-map .site-tip { background:#fff; color:#0e2952; border:2px solid #0e2952; border-radius:8px; padding:4px 9px; font-weight:600; box-shadow:0 2px 8px rgba(14,41,82,.25); }\n  #d1-map .site-tip::before { display:none; }\n  #d1-map .d1-site-kind { display:inline-block; font-size:11px; font-weight:700; padding:1px 8px; border-radius:999px; color:#fff; margin:2px 0 4px; }';
   document.head.appendChild(style);
 
   // ---- language (English / Spanish) -----------------------------
@@ -58,6 +63,9 @@
       precinct: function (p) { return "Precinct " + p; },
       tipCounts: function (t, a) { return t + " registered &middot; " + a + " active"; },
       legD1: "District 1", legPct: "Voting precinct",
+      legEv: "Early voting + Election Day", legEd: "Election Day only",
+      siteEv: "Early voting Oct 19&ndash;30 + Election Day", siteEd: "Election Day only &middot; Tue Nov 3",
+      evHoursLine: "Early voting: 7am&ndash;7pm daily", edHoursLine: "Election Day: 7am&ndash;7pm",
       inD1: "&#10003; In District 1", notD1: "Not in District 1", yardSign: "Request a yard sign &rarr;",
       searching: "Searching&hellip;", notFound: "Couldn't find that address. Try adding the street name or ZIP code.",
       lookupFailed: "Address lookup failed. Please try again.", noGeo: "Your browser doesn't support location.",
@@ -87,6 +95,9 @@
       precinct: function (p) { return "Precinto " + p; },
       tipCounts: function (t, a) { return t + " registrados &middot; " + a + " activos"; },
       legD1: "Distrito 1", legPct: "Precinto electoral",
+      legEv: "Votación anticipada + Día de las elecciones", legEd: "Solo Día de las elecciones",
+      siteEv: "Votación anticipada 19&ndash;30 de oct. + Día de las elecciones", siteEd: "Solo Día de las elecciones &middot; mar. 3 de nov.",
+      evHoursLine: "Votación anticipada: 7 a.&nbsp;m.&ndash;7 p.&nbsp;m. todos los días", edHoursLine: "Día de las elecciones: 7 a.&nbsp;m.&ndash;7 p.&nbsp;m.",
       inD1: "&#10003; En el Distrito 1", notD1: "Fuera del Distrito 1", yardSign: "Pide un letrero para tu jardín &rarr;",
       searching: "Buscando&hellip;", notFound: "No encontramos esa dirección. Intenta agregar el nombre de la calle o el código postal.",
       lookupFailed: "La búsqueda de la dirección falló. Inténtalo de nuevo.", noGeo: "Tu navegador no permite compartir tu ubicación.",
@@ -176,10 +187,68 @@ function start(DATA_BASE) {
 
   var precinctLayer, outlineLayer;
 
+  // ---- polling places (shared by the map layer and the polling tab) ----
+  var pollingLoad = null;
+  function loadPollingData() {
+    if (!pollingLoad) pollingLoad = fetch(base("d1-polling.json")).then(function (r) { return r.json(); })
+      .catch(function (e) { pollingLoad = null; throw e; });
+    return pollingLoad;
+  }
+  function kindOf(s) { return s.k === "both" ? "ev" : "ed"; }
+  function siteNote(n) { return n === STR.en.oct30Only ? T("oct30Only") : n; }   // the one note in the data
+  function pinIcon(s, extra) {
+    var big = / big/.test(extra || ""), px = big ? 24 : 16;
+    return L.divIcon({ className: "", iconSize: [px, px], iconAnchor: [px / 2, px / 2], popupAnchor: [0, -px / 2],
+                       html: '<div class="d1-pin ' + kindOf(s) + (extra || "") + '"></div>' });
+  }
+  // Popup for a polling place; fromLat/fromLng (optional) give directions from there.
+  function sitePopup(s, fromLat, fromLng) {
+    var dir = "https://www.google.com/maps/dir/?api=1" + (fromLat != null ? "&origin=" + fromLat + "," + fromLng : "") +
+              "&destination=" + encodeURIComponent(s.a) + "&travelmode=driving";
+    return "<strong>" + s.n + "</strong><br>" +
+      '<span class="d1-site-kind" style="background:' + (s.k === "both" ? ORANGE : NAVY) + '">' + T(s.k === "both" ? "siteEv" : "siteEd") + "</span><br>" +
+      '<span style="color:#5b6b82">' + (s.r ? s.r + " &middot; " : "") + s.a + "</span>" +
+      '<div style="margin-top:4px">' + (s.k === "both" ? T("evHoursLine") + (s.ext ? " &middot; " + T("extHours") : "") + "<br>" : "") + T("edHoursLine") +
+      (s.note ? "<br><em>" + siteNote(s.note) + "</em>" : "") + "</div>" +
+      '<a class="d1-cta" href="' + dir + '" target="_blank" rel="noopener">' + T("directions") + "</a>";
+  }
+  function milesToEdge(pt, f) {    // flat-earth approximation, fine at city scale
+    var ky = 69.17, kx = 69.17 * Math.cos(pt[1] * Math.PI / 180), best = Infinity, px = pt[0] * kx, py = pt[1] * ky;
+    var polys = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+    polys.forEach(function (p) { p.forEach(function (ring) {
+      for (var i = 1; i < ring.length; i++) {
+        var ax = ring[i - 1][0] * kx, ay = ring[i - 1][1] * ky, dx = ring[i][0] * kx - ax, dy = ring[i][1] * ky - ay, L2 = dx * dx + dy * dy;
+        var t = L2 ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / L2)) : 0;
+        var ex = ax + t * dx - px, ey = ay + t * dy - py, d = Math.sqrt(ex * ex + ey * ey);
+        if (d < best) best = d;
+      }
+    }); });
+    return best;
+  }
+  function drawSites(all, d1) {
+    var n = 0;
+    all.forEach(function (s) {
+      var pt = [s.lng, s.lat], inD1 = inFeature(pt, d1);
+      if (!inD1 && !(BUFFER_MI > 0 && milesToEdge(pt, d1) <= BUFFER_MI)) return;
+      n++;
+      L.marker([s.lat, s.lng], { icon: pinIcon(s, inD1 ? "" : " near"), zIndexOffset: s.k === "both" ? 500 : 0, title: s.n, keyboard: true })
+        .addTo(map)
+        .bindTooltip(function () { return s.n; }, { className: "site-tip", direction: "top", offset: [0, -8] })
+        .bindPopup(function () { return sitePopup(s); });
+    });
+    return n;
+  }
+  // "Your address" pin: a classic map-pin shape, so it can't be mistaken for an orange early-voting dot.
+  function addressPin(lat, lng) {
+    return L.marker([lat, lng], { zIndexOffset: 2000, icon: L.divIcon({ className: "", iconSize: [28, 38], iconAnchor: [14, 37], popupAnchor: [0, -32],
+      html: '<svg width="28" height="38" viewBox="0 0 28 38" style="filter:drop-shadow(0 2px 3px rgba(14,41,82,.45))"><path d="M14 1C6.8 1 1 6.7 1 13.8 1 23.5 14 37 14 37s13-13.5 13-23.2C27 6.7 21.2 1 14 1z" fill="#c2410c" stroke="#fff" stroke-width="2"/><circle cx="14" cy="13.5" r="5" fill="#fff"/></svg>' }) });
+  }
+
   Promise.all([
     fetch(base("d1-precincts.geojson")).then(function (r) { return r.json(); }),
     fetch(base("d1-outline.geojson")).then(function (r) { return r.json(); }),
-    fetch(base("d1-voters.json")).then(function (r) { return r.json(); }).catch(function () { return {}; })
+    fetch(base("d1-voters.json")).then(function (r) { return r.json(); }).catch(function () { return {}; }),
+    loadPollingData().catch(function () { return []; })
   ]).then(function (res) {
     var precincts = res[0], outline = res[1], voterCounts = res[2];
 
@@ -211,13 +280,19 @@ function start(DATA_BASE) {
     setTimeout(fit, 300);
     window.addEventListener("load", fit);
 
+    // 4) Every polling place in / near D1: orange = early voting (and Election
+    //    Day), navy = Election Day only. Same colors as the poll-greeting map.
+    var siteCount = drawSites(res[3] || [], outline.features[0]);
+
     var legend = L.control({ position: "bottomleft" });
     legend.onAdd = function () {
       var d = L.DomUtil.create("div", "d1-legend");
       function draw() {
         d.innerHTML =
           '<div><span class="sw" style="border:2px solid ' + NAVY + ';background:rgba(14,41,82,.28)"></span><strong>' + T("legD1") + "</strong></div>" +
-          '<div><span class="sw" style="border:1px solid ' + NAVY + ';opacity:.7"></span>' + T("legPct") + "</div>";
+          '<div><span class="sw" style="border:1px solid ' + NAVY + ';opacity:.7"></span>' + T("legPct") + "</div>" +
+          (siteCount ? '<div><span class="dot" style="background:' + ORANGE + '"></span>' + T("legEv") + "</div>" +
+                       '<div><span class="dot" style="background:' + NAVY + '"></span>' + T("legEd") + "</div>" : "");
       }
       draw(); onLang.push(draw);
       return d;
@@ -284,7 +359,7 @@ function start(DATA_BASE) {
         if (inFeature(pt, precincts.features[i])) { pct = precincts.features[i].properties.p; break; }
       }
       if (marker) map.removeLayer(marker);
-      var m = marker = L.circleMarker([lat, lng], { radius: 9, color: "#fff", weight: 3, fillColor: ORANGE, fillOpacity: 1 }).addTo(map);
+      var m = marker = addressPin(lat, lng).addTo(map);
       var yardHref = YARD_SIGN_URL;
       if (typeof label === "string" && label) {      // prefill the yard-sign form only from a real address
         var parts = label.split(",").map(function (t) { return t.trim(); });
@@ -537,8 +612,7 @@ function start(DATA_BASE) {
 
     function loadPolling() {
       if (pollLoading) return pollLoading;
-      pollLoading = fetch(base("d1-polling.json"))
-        .then(function (r) { return r.json(); })
+      pollLoading = loadPollingData()
         .then(function (d) { pollData = d; return d; })
         .catch(function () { pollLoading = null; say("pollFailed", true); return null; });
       return pollLoading;
@@ -564,7 +638,6 @@ function start(DATA_BASE) {
         "&destination=" + encodeURIComponent(site.a) + "&travelmode=driving";
     }
     function miles(mi) { return mi.toFixed(1); }
-    function siteNote(n) { return n === STR.en.oct30Only ? T("oct30Only") : n; }   // the one note in the data
     function siteCard(title, hours, hit, fromLat, fromLng) {
       var s = hit.site;
       return '<div style="flex:1 1 240px;border:2px solid #0e2952;border-radius:14px;padding:12px 14px;background:#fff">' +
@@ -583,14 +656,12 @@ function start(DATA_BASE) {
         pollMarkers.forEach(function (m) { map.removeLayer(m); });
         pollMarkers = [];
         if (marker) map.removeLayer(marker);
-        var here = marker = L.circleMarker([lat, lng], { radius: 9, color: "#fff", weight: 3, fillColor: ORANGE, fillOpacity: 1 })
-          .addTo(map).bindPopup("");
+        var here = marker = addressPin(lat, lng).addTo(map).bindPopup("");
         var pts = [[lat, lng]], sites = [];
         [{ hit: ev, t: "earlyVoting" }, { hit: ed, t: "electionDay" }].forEach(function (x) {
           if (!x.hit) return;
           var s = x.hit.site;
-          var m = L.circleMarker([s.lat, s.lng], { radius: 8, color: "#fff", weight: 3, fillColor: NAVY, fillOpacity: 1 })
-            .addTo(map).bindPopup("");
+          var m = L.marker([s.lat, s.lng], { icon: pinIcon(s, " big"), zIndexOffset: 1500 }).addTo(map).bindPopup("");
           pollMarkers.push(m);
           sites.push({ m: m, x: x });
           pts.push([s.lat, s.lng]);
@@ -599,8 +670,7 @@ function start(DATA_BASE) {
           here.setPopupContent(val(label) || T("youAreHere"));
           sites.forEach(function (p) {
             var s = p.x.hit.site;
-            p.m.setPopupContent("<strong>" + s.n + "</strong><br>" + T(p.x.t) + " &middot; " + miles(p.x.hit.mi) + " mi<br>" + s.a +
-              '<br><a class="d1-cta" href="' + dirLink(lat, lng, s) + '" target="_blank" rel="noopener">' + T("directions") + "</a>");
+            p.m.setPopupContent(sitePopup(s, lat, lng));
           });
           setResult('<div style="display:flex;gap:10px;flex-wrap:wrap">' +
             (ev ? siteCard(T("cardEv"), T("hoursEv"), ev, lat, lng) : "") +
